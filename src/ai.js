@@ -183,18 +183,50 @@ async function generateWorkerImage(c, promptText) {
   return imageUrl;
 }
 
-// ─── Helper: run LLM (Cloudflare Workers AI only — @cf/meta/llama-3.2-3b-instruct) ─
+// ─── Helper: run LLM (Cloudflare Workers AI — Llama 3.3 70B / Settings) ───────
 async function runLLMChat(c, messages) {
   const db = c.env.DB;
-  // Use only the Cloudflare Workers AI llama-3.2-3b-instruct model as requested
+  let selectedModel = '@cf/meta/llama-3.3-70b-instruct-fp8-fast';
+
   try {
-    const aiRes = await c.env.AI.run('@cf/meta/llama-3.2-3b-instruct', {
+    const selRow = await db.prepare(
+      "SELECT value FROM settings WHERE key = 'selected_model' OR key = 'selectedModel'"
+    ).first();
+    if (selRow && selRow.value && selRow.value.trim()) {
+      const val = selRow.value.trim();
+      if (val.startsWith('@cf/')) {
+        selectedModel = val;
+      }
+    }
+  } catch (err) {
+    console.warn('Could not read selected_model from settings:', err.message);
+  }
+
+  try {
+    const aiRes = await c.env.AI.run(selectedModel, {
       messages,
-      max_tokens: 4096
+      max_tokens: 4096,
+      temperature: 0.6,
+      repetition_penalty: 1.15
     });
     return typeof aiRes === 'string' ? aiRes : (aiRes.response || '');
   } catch (err) {
-    console.error('LLM chat error:', err);
+    console.error(`LLM chat error with model ${selectedModel}:`, err);
+    // Fallback to Llama 3.1 8B if 70B temporarily fails
+    if (selectedModel !== '@cf/meta/llama-3.1-8b-instruct') {
+      try {
+        console.log('Attempting fallback to @cf/meta/llama-3.1-8b-instruct...');
+        const fallbackRes = await c.env.AI.run('@cf/meta/llama-3.1-8b-instruct', {
+          messages,
+          max_tokens: 4096,
+          temperature: 0.6,
+          repetition_penalty: 1.15
+        });
+        return typeof fallbackRes === 'string' ? fallbackRes : (fallbackRes.response || '');
+      } catch (fbErr) {
+        console.error('Fallback LLM chat error:', fbErr);
+      }
+    }
     return '';
   }
 }

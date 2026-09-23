@@ -69,8 +69,20 @@ export async function requireAdmin(c, next) {
     const secret = c.env.JWT_SECRET || 'karu_ai_secure_jwt_secret_2026_key';
     const decoded = await verify(token, secret, 'HS256');
     const db = c.env.DB;
-    const dbUser = await db.prepare('SELECT email, role FROM users WHERE id = ?').bind(decoded.id).first();
-    if (dbUser && dbUser.role === 'admin' && dbUser.email === 'roi@karu.ai') {
+    
+    let dbUser = null;
+    if (decoded.id) {
+      dbUser = await db.prepare('SELECT id, email, role FROM users WHERE id = ?').bind(decoded.id).first();
+    }
+    if (!dbUser && decoded.email) {
+      dbUser = await db.prepare('SELECT id, email, role FROM users WHERE LOWER(email) = LOWER(?)').bind(decoded.email).first();
+    }
+
+    const emailMatch = (dbUser?.email && dbUser.email.toLowerCase() === 'roi@karu.ai') ||
+                       (decoded?.email && decoded.email.toLowerCase() === 'roi@karu.ai');
+    const roleMatch = dbUser?.role === 'admin' || decoded?.role === 'admin';
+
+    if (roleMatch || emailMatch) {
       decoded.role = 'admin';
       c.set('user', decoded);
       return await next();
@@ -78,6 +90,7 @@ export async function requireAdmin(c, next) {
       return c.json({ error: 'Forbidden: Admin access required.' }, 403);
     }
   } catch (err) {
+    console.error('requireAdmin error:', err);
     return c.json({ error: 'Invalid or expired authentication token' }, 401);
   }
 }
