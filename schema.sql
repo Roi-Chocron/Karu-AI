@@ -61,3 +61,28 @@ CREATE TABLE IF NOT EXISTS polar_events (
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
 CREATE INDEX IF NOT EXISTS idx_posts_user_id ON posts(user_id);
 CREATE INDEX IF NOT EXISTS idx_posts_is_shared ON posts(is_shared);
+
+-- Table for tracking full activity logs of all users
+CREATE TABLE IF NOT EXISTS user_logs (
+    id TEXT PRIMARY KEY,
+    user_id TEXT,
+    username TEXT,
+    action TEXT NOT NULL,
+    level TEXT DEFAULT 'INFO',
+    message TEXT NOT NULL,
+    method TEXT,
+    path TEXT,
+    status_code INTEGER,
+    ip TEXT,
+    user_agent TEXT,
+    duration_ms INTEGER,
+    details TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE SET NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_user_logs_user_id ON user_logs(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_logs_created_at ON user_logs(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_user_logs_level ON user_logs(level);
+CREATE INDEX IF NOT EXISTS idx_user_logs_action ON user_logs(action);
+

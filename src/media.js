@@ -1,5 +1,6 @@
 import { Hono } from 'hono';
 import { authenticateToken } from './auth.js';
+import { recordUserLog } from './logger.js';
 
 export const mediaApp = new Hono();
 
@@ -70,9 +71,25 @@ mediaApp.post('/api/upload-image', authenticateToken, async (c) => {
     });
 
     const url = `/api/media/${filename}`;
+
+    await recordUserLog(c, {
+      action: 'media_upload',
+      level: 'INFO',
+      message: `User uploaded image: ${filename} (${Math.round(buffer.byteLength / 1024)} KB)`,
+      statusCode: 200,
+      details: { filename, mimeType, sizeBytes: buffer.byteLength }
+    });
+
     return c.json({ success: true, url, filename });
   } catch (err) {
     console.error('Upload image error:', err);
+    await recordUserLog(c, {
+      action: 'media_upload_error',
+      level: 'ERROR',
+      message: `Image upload failed: ${err.message}`,
+      statusCode: 500,
+      details: { error: err.message }
+    });
     return c.json({ error: 'Failed to process uploaded image' }, 500);
   }
 });

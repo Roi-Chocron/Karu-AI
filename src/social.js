@@ -1,5 +1,6 @@
 import { Hono } from 'hono';
 import { authenticateToken } from './auth.js';
+import { recordUserLog } from './logger.js';
 
 export const socialApp = new Hono();
 
@@ -85,6 +86,14 @@ socialApp.post('/api/social/publish-instagram', authenticateToken, async (c) => 
       return c.json({ error: publishData.error?.message || 'Failed to publish media' }, 400);
     }
 
+    await recordUserLog(c, {
+      action: 'social_publish_instagram',
+      level: 'INFO',
+      message: `Published post to Instagram (Post ID: ${publishData.id})`,
+      statusCode: 200,
+      details: { igPostId: publishData.id, imageUrl }
+    });
+
     return c.json({ success: true, postId: publishData.id });
   } catch (err) {
     return c.json({ error: err.message }, 500);
@@ -119,6 +128,14 @@ socialApp.post('/api/social/publish-facebook', authenticateToken, async (c) => {
     if (!res.ok || data.error) {
       return c.json({ error: data.error?.message || 'Failed to publish to Facebook' }, 400);
     }
+
+    await recordUserLog(c, {
+      action: 'social_publish_facebook',
+      level: 'INFO',
+      message: `Published post to Facebook Page (ID: ${data.id || data.post_id})`,
+      statusCode: 200,
+      details: { fbPostId: data.id || data.post_id }
+    });
 
     return c.json({ success: true, postId: data.id || data.post_id });
   } catch (err) {

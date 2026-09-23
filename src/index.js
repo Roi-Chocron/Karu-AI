@@ -9,6 +9,8 @@ import { aiApp } from './ai.js';
 import { settingsApp } from './settings.js';
 import { socialApp } from './social.js';
 import { polarApp } from './polar.js';
+import { logsApp } from './logs.js';
+import { apiActivityLogger, recordUserLog } from './logger.js';
 
 const app = new Hono();
 
@@ -21,6 +23,9 @@ app.use('*', cors({
   exposeHeaders: ['Content-Length', 'Set-Cookie'],
   credentials: true
 }));
+
+// Full User Activity Tracking Middleware on all API calls
+app.use('/api/*', apiActivityLogger());
 
 // Health & Info
 app.get('/api/health', (c) => {
@@ -45,6 +50,7 @@ app.route('/', aiApp);
 app.route('/', settingsApp);
 app.route('/', socialApp);
 app.route('/', polarApp);
+app.route('/', logsApp);
 
 // Static Assets fallback (Frontend serving)
 app.get('*', async (c) => {
@@ -58,8 +64,19 @@ app.get('*', async (c) => {
 });
 
 // Global Error Handler
-app.onError((err, c) => {
+app.onError(async (err, c) => {
   console.error('[Worker Error]', err);
+  try {
+    await recordUserLog(c, {
+      action: 'server_error',
+      level: 'ERROR',
+      message: `Global error: ${err.message}`,
+      statusCode: 500,
+      details: { error: err.message, stack: err.stack }
+    });
+  } catch (e) {
+    // Prevent recursive errors
+  }
   return c.json({ error: 'Internal Server Error', message: err.message }, 500);
 });
 

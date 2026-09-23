@@ -435,10 +435,17 @@
 
     .user-meta {
       display: flex;
+      flex-direction: row;
+      align-items: center;
+      gap: 10px;
+      flex-shrink: 0;
+    }
+
+    .user-badges-wrap {
+      display: flex;
       flex-direction: column;
       align-items: flex-end;
       gap: 4px;
-      flex-shrink: 0;
     }
 
     .chevron {
@@ -624,12 +631,86 @@
     .settings-input::placeholder { color: var(--color-text-sub); }
 
     textarea.settings-input {
-      min-height: 100px;
+      min-height: 120px;
       resize: vertical;
-      font-family: monospace;
-      font-size: 12px;
-      line-height: 1.5;
-      background: #f9fafb;
+      font-family: 'Fira Code', Consolas, Monaco, monospace;
+      font-size: 13px;
+      line-height: 1.6;
+      background: #ffffff;
+      padding: 12px 14px;
+      box-sizing: border-box;
+    }
+
+    textarea.settings-input#admin-system-prompt {
+      min-height: 380px;
+      height: 420px;
+      font-size: 13px;
+    }
+
+    textarea.settings-input#admin-image-prompt {
+      min-height: 140px;
+      height: 160px;
+    }
+
+    .icon-refresh-btn {
+      width: 40px;
+      height: 40px;
+      background: #ffffff;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-sm);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--color-text-muted);
+      cursor: pointer;
+      transition: all 0.2s;
+      flex-shrink: 0;
+    }
+    .icon-refresh-btn:hover {
+      background: #f3f4f6;
+      color: var(--color-primary);
+      border-color: var(--color-primary);
+    }
+    .icon-refresh-btn.spinning svg {
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { 100% { transform: rotate(360deg); } }
+
+    .live-model-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 11px;
+      font-weight: 700;
+      color: #047857;
+      background: #ecfdf5;
+      border: 1px solid #a7f3d0;
+      padding: 3px 8px;
+      border-radius: 12px;
+    }
+    .live-model-badge.catalog {
+      color: #4b5563;
+      background: #f3f4f6;
+      border-color: #e5e7eb;
+    }
+
+    .user-del-btn {
+      width: 28px;
+      height: 28px;
+      border-radius: var(--radius-sm);
+      border: 1px solid transparent;
+      background: transparent;
+      color: var(--color-text-sub);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .user-del-btn:hover {
+      background: #fee2e2;
+      color: #ef4444;
+      border-color: #fca5a5;
     }
 
     select.settings-input {
@@ -790,6 +871,27 @@
     .detail-edit-btn:hover {
       background: var(--color-primary);
       color: #ffffff;
+    }
+
+    .detail-delete-btn {
+      background: #fee2e2;
+      border: 1px solid #fecaca;
+      color: #dc2626;
+      font-family: var(--font-family);
+      font-size: 12px;
+      font-weight: 800;
+      padding: 6px 14px;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+    .detail-delete-btn:hover {
+      background: #dc2626;
+      color: #ffffff;
+      border-color: #dc2626;
     }
 
     .detail-body {
@@ -1222,6 +1324,28 @@
       padding: 4px 20px 10px;
       display: flex;
       gap: 10px;
+      align-items: center;
+    }
+
+    .btn-delete-modal {
+      height: 44px;
+      padding: 0 14px;
+      background: #fee2e2;
+      border: 1px solid #fecaca;
+      border-radius: var(--radius-md);
+      color: #dc2626;
+      font-family: var(--font-family);
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+    .btn-delete-modal:hover {
+      background: #dc2626;
+      color: #fff;
     }
 
     .btn-cancel {
@@ -1464,6 +1588,15 @@
         </span>
         הגדרות
       </button>
+      <button class="tab-btn" onclick="switchTab('logs')" id="tab-btn-logs">
+        <span class="tab-icon-wrap">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="4 17 10 11 4 5"></polyline>
+            <line x1="12" y1="19" x2="20" y2="19"></line>
+          </svg>
+        </span>
+        יומן פעילות
+      </button>
     </nav>
 
     <!-- CONTENT AREA -->
@@ -1475,7 +1608,7 @@
       <div class="tab-pane active" id="pane-users">
         <!-- Search -->
         <div class="search-box">
-          <input type="text" id="user-search" placeholder="חיפוש לפי שם או אימייל..." oninput="filterUsers()">
+          <input type="text" id="user-search" placeholder="חיפוש לפי שם או אימייל..." oninput="filterUsers()" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
           <span class="search-icon">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
               <circle cx="11" cy="11" r="8"></circle>
@@ -1511,7 +1644,7 @@
       <div class="tab-pane" id="pane-carousels">
         <!-- Search -->
         <div class="search-box">
-          <input type="text" id="post-search" placeholder="חיפוש לפי יוצר, נושא..." oninput="filterPosts()">
+          <input type="text" id="post-search" placeholder="חיפוש לפי יוצר, נושא..." oninput="filterPosts()" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
           <span class="search-icon">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
               <circle cx="11" cy="11" r="8"></circle>
@@ -1543,12 +1676,12 @@
       ====================================================== -->
       <div class="tab-pane" id="pane-settings">
 
-        <!-- Active text model -->
+        <!-- Active text model status banner -->
         <div class="model-status-banner">
           <div class="status-dot"></div>
           <div class="model-status-text">
-            <strong>Cloudflare Workers AI — פעיל</strong>
-            <span>@cf/meta/llama-3.3-70b-instruct-fp8-fast</span>
+            <strong id="active-llm-title">Cloudflare Workers AI — פעיל</strong>
+            <span id="active-llm-id">@cf/meta/llama-3.3-70b-instruct-fp8-fast</span>
           </div>
         </div>
 
@@ -1556,10 +1689,50 @@
         <input type="hidden" id="admin-provider-select" value="cloudflare">
         <input type="hidden" id="admin-api-key" value="">
         <input type="hidden" id="admin-openrouter-key" value="">
-        <input type="hidden" id="admin-model-select" value="@cf/meta/llama-3.3-70b-instruct-fp8-fast">
 
-        <!-- System Prompt -->
+        <!-- Language Model (LLM) Settings -->
+        <div class="section-label">מודל שפה (Cloudflare LLM)</div>
         <div class="settings-group">
+          <div class="settings-row">
+            <div class="settings-label" style="display:flex; justify-content:space-between; align-items:center;">
+              <span style="display:flex; align-items:center; gap:6px;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+                  <line x1="8" y1="21" x2="16" y2="21"></line>
+                  <line x1="12" y1="17" x2="12" y2="21"></line>
+                </svg>
+                בחירת מודל שפה
+              </span>
+              <span id="text-models-badge" class="live-model-badge">Cloudflare Workers AI</span>
+            </div>
+            <div class="settings-desc">בחר מודל שפה מתוך כלל המודלים הזמינים ב-Cloudflare Workers AI לייצור תוכן הקרוסלות.</div>
+            <div style="display:flex; gap:8px; align-items:center; margin-top:6px;">
+              <select id="admin-model-select" class="settings-input" onchange="onTextModelSelectChange()" style="flex:1;">
+                <option value="@cf/meta/llama-3.3-70b-instruct-fp8-fast">Meta Llama 3.3 70B Instruct (FP8 Fast - מומלץ)</option>
+                <option value="@cf/meta/llama-3.1-8b-instruct-fast">Meta Llama 3.1 8B Instruct Fast (מהיר וקליל)</option>
+                <option value="@cf/meta/llama-3.2-3b-instruct">Meta Llama 3.2 3B Instruct (קומפקטי וחסכוני)</option>
+                <option value="@cf/meta/llama-3.2-1b-instruct">Meta Llama 3.2 1B Instruct (אולטרה-מהיר)</option>
+                <option value="@cf/meta/llama-3.1-70b-instruct">Meta Llama 3.1 70B Instruct (עמוק ואיכותי)</option>
+                <option value="@cf/deepseek-ai/deepseek-r1-distill-qwen-32b">DeepSeek R1 Distill Qwen 32B (חשיבה עמוקה והיגיון)</option>
+                <option value="@cf/qwen/qwq-32b">Qwen QwQ 32B (היגיון מתקדם)</option>
+                <option value="@cf/qwen/qwen3-30b-a3b-fp8">Qwen 3 30B A3B FP8 (דור הבא)</option>
+                <option value="@cf/qwen/qwen2.5-72b-instruct">Qwen 2.5 72B Instruct (מודל ענק מתקדם)</option>
+                <option value="@cf/mistral/mistral-7b-instruct-v0.2">Mistral 7B Instruct v0.2</option>
+                <option value="@cf/google/gemma-7b-it">Google Gemma 7B IT</option>
+                <option value="custom">מודל מותאם אישית ב-Cloudflare...</option>
+              </select>
+              <button type="button" class="icon-refresh-btn" id="btn-refresh-text-models" onclick="fetchTextModels(true)" title="רענן מודלים מ-Cloudflare">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="23 4 23 10 17 10"></polyline>
+                  <polyline points="1 20 1 14 7 14"></polyline>
+                  <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+                </svg>
+              </button>
+            </div>
+            <input type="text" id="admin-model-custom" class="settings-input" style="display:none; margin-top:8px;" placeholder="הזן מזהה מודל Cloudflare (למשל: @cf/meta/llama-3.3-70b-instruct)..." oninput="onCustomTextModelInput()">
+          </div>
+
+          <!-- System Prompt -->
           <div class="settings-row">
             <div class="settings-label">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
@@ -1571,7 +1744,7 @@
               </svg>
               System Prompt לקרוסלות
             </div>
-            <div class="settings-desc">ה-Prompt הגלובלי שמשמש לכל יצירת קרוסלה במערכת.</div>
+            <div class="settings-desc">ה-Prompt הגלובלי המורחב שמשמש לכל יצירת קרוסלה במערכת.</div>
             <textarea id="admin-system-prompt" class="settings-input" placeholder="הזן כאן את הפרומפט הגלובלי ליצירת קרוסלות..."></textarea>
           </div>
         </div>
@@ -1606,7 +1779,7 @@
               </svg>
               מפתח API / טוקן
             </div>
-            <input type="password" id="admin-image-api-key" class="settings-input" placeholder="הזן מפתח API...">
+            <input type="password" id="admin-image-api-key" class="settings-input" placeholder="הזן מפתח API..." onchange="onApiKeyBlur()">
             <button type="button" id="btn-puter-login" onclick="openPuterAuthWindow()" class="puter-btn" style="display:none;">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                 <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
@@ -1617,15 +1790,27 @@
           </div>
 
           <div class="settings-row">
-            <div class="settings-label">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
-                <polyline points="2 17 12 22 22 17"></polyline>
-                <polyline points="2 12 12 17 22 12"></polyline>
-              </svg>
-              מודל תמונות
+            <div class="settings-label" style="display:flex; justify-content:space-between; align-items:center;">
+              <span style="display:flex; align-items:center; gap:6px;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                  <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+                  <polyline points="2 17 12 22 22 17"></polyline>
+                  <polyline points="2 12 12 17 22 12"></polyline>
+                </svg>
+                מודל תמונות
+              </span>
+              <span id="image-models-badge" class="live-model-badge catalog">רשימת מודלים</span>
             </div>
-            <select id="admin-image-model-select" class="settings-input" onchange="onImageModelSelectChange()"></select>
+            <div style="display:flex; gap:8px; align-items:center; margin-top:6px;">
+              <select id="admin-image-model-select" class="settings-input" onchange="onImageModelSelectChange()" style="flex:1;"></select>
+              <button type="button" class="icon-refresh-btn" id="btn-refresh-image-models" onclick="onRefreshImageModelsClick()" title="רענן מודלים מעודכנים מהספק">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="23 4 23 10 17 10"></polyline>
+                  <polyline points="1 20 1 14 7 14"></polyline>
+                  <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+                </svg>
+              </button>
+            </div>
             <input type="text" id="admin-image-model" class="settings-input" style="display:none; margin-top:6px;" placeholder="הזן מזהה מודל ידנית...">
           </div>
 
@@ -1650,16 +1835,65 @@
           <span id="btn-save-settings-text">שמור הגדרות</span>
         </button>
 
-        <a href="prompt_optimizer.html" class="secondary-btn">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
-            <polyline points="23 4 23 10 17 10"></polyline>
-            <polyline points="1 20 1 14 7 14"></polyline>
-            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
-          </svg>
-          Prompt Optimization Loop
-        </a>
-
         <div style="height: 16px;"></div>
+      </div>
+
+      <!-- ======================================================
+           TAB: ACTIVITY LOGS (ALL USERS)
+      ====================================================== -->
+      <div class="tab-pane" id="pane-logs">
+        <!-- Search and quick filters -->
+        <div class="search-box">
+          <input type="text" id="global-log-search" placeholder="חיפוש בלוגים (שם משתמש, הודעה, פעולה, כתובת IP)..." oninput="debounceFilterGlobalLogs()" autocomplete="off" spellcheck="false">
+          <span class="search-icon">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+          </span>
+        </div>
+
+        <!-- Filter bar -->
+        <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-bottom:12px;">
+          <select id="filter-log-user" onchange="loadGlobalLogs()" style="flex:1; min-width:140px; height:38px; background:var(--color-surface); border:1px solid var(--color-border); border-radius:var(--radius-md); font-size:12px; font-weight:700; color:var(--color-text); padding:0 8px;">
+            <option value="ALL">כל המשתמשים</option>
+          </select>
+          <div class="log-level-filter" style="background:var(--color-surface); padding:4px 6px; border-radius:var(--radius-md); border:1px solid var(--color-border); display:flex; gap:4px;">
+            <button class="log-filter-btn active-all" onclick="filterGlobalLogsLevel('ALL', this)">הכל</button>
+            <button class="log-filter-btn" onclick="filterGlobalLogsLevel('INFO', this)">INFO</button>
+            <button class="log-filter-btn" onclick="filterGlobalLogsLevel('WARN', this)">WARN</button>
+            <button class="log-filter-btn" onclick="filterGlobalLogsLevel('ERROR', this)">ERR</button>
+          </div>
+          <button onclick="loadGlobalLogs()" class="secondary-btn" style="height:38px; padding:0 12px; font-size:12px;" title="רענן לוגים">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"></path><path d="M1 20v-6h6"></path><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+            רענן
+          </button>
+        </div>
+
+        <!-- Logs Container Card -->
+        <div class="card">
+          <div class="card-header" style="justify-content:space-between;">
+            <div class="card-title">
+              <div class="card-title-icon">
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="4 17 10 11 4 5"></polyline>
+                  <line x1="12" y1="19" x2="20" y2="19"></line>
+                </svg>
+              </div>
+              יומן פעילות שרת בזמן אמת
+            </div>
+            <div style="display:flex; align-items:center; gap:8px;">
+              <span id="global-logs-count-badge" class="badge badge-free">0 רשומות</span>
+              <button onclick="clearAllSystemLogs()" style="background:none; border:none; color:var(--color-danger); font-size:11px; font-weight:700; cursor:pointer; display:flex; align-items:center; gap:4px; padding:4px 8px; border-radius:4px;">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                נקה לוגים
+              </button>
+            </div>
+          </div>
+          <div id="global-logs-body" style="padding:10px; display:flex; flex-direction:column; gap:8px; max-height:550px; overflow-y:auto; font-family:'Courier New', monospace; font-size:11px; direction:ltr; text-align:left; background:#111827; border-radius:0 0 var(--radius-lg) var(--radius-lg);">
+            <!-- Rendered dynamically -->
+          </div>
+        </div>
       </div>
 
       <!-- ======================================================
@@ -1684,6 +1918,15 @@
               <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
             </svg>
             <span>ערוך</span>
+          </button>
+          <button class="detail-delete-btn" onclick="deleteUserFromDetail()" title="מחק משתמש לצמיתות">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="3 6 5 6 21 6"></polyline>
+              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+              <line x1="10" y1="11" x2="10" y2="17"></line>
+              <line x1="14" y1="11" x2="14" y2="17"></line>
+            </svg>
+            <span>מחק</span>
           </button>
         </div>
 
@@ -1794,11 +2037,16 @@
                   <span style="width:8px;height:8px;border-radius:50%;background:var(--color-success);display:inline-block;box-shadow:0 0 6px rgba(16,185,129,0.6);"></span>
                   Server Logs
                 </div>
-                <div class="log-level-filter">
-                  <button class="log-filter-btn active-all" onclick="filterLogs('ALL', this)">ALL</button>
-                  <button class="log-filter-btn" onclick="filterLogs('INFO', this)">INFO</button>
-                  <button class="log-filter-btn" onclick="filterLogs('WARN', this)">WARN</button>
-                  <button class="log-filter-btn" onclick="filterLogs('ERROR', this)">ERR</button>
+                <div style="display:flex; align-items:center; gap:6px;">
+                  <button onclick="renderDetailLogs(currentDetailUserId)" style="background:none; border:none; color:#9ca3af; cursor:pointer; display:flex; align-items:center; padding:2px;" title="רענן">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"></path><path d="M1 20v-6h6"></path><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+                  </button>
+                  <div class="log-level-filter">
+                    <button class="log-filter-btn active-all" onclick="filterLogs('ALL', this)">ALL</button>
+                    <button class="log-filter-btn" onclick="filterLogs('INFO', this)">INFO</button>
+                    <button class="log-filter-btn" onclick="filterLogs('WARN', this)">WARN</button>
+                    <button class="log-filter-btn" onclick="filterLogs('ERROR', this)">ERR</button>
+                  </div>
                 </div>
               </div>
               <div class="logs-body" id="user-logs-body">
@@ -1806,7 +2054,7 @@
               </div>
             </div>
             <div style="font-size:11px; color:var(--color-text-sub); text-align:center; padding: 4px 0 8px;">
-              מציג לוגים אחרונים (UI בלבד — נתונים לדוגמה)
+              לוגים מלאים בזמן אמת ממסד הנתונים
             </div>
           </div>
 
@@ -1858,6 +2106,13 @@
         </div>
       </div>
       <div class="modal-footer">
+        <button type="button" class="btn-delete-modal" onclick="deleteUserFromModal()" title="מחק משתמש לצמיתות">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="3 6 5 6 21 6"></polyline>
+            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+          </svg>
+          <span>מחק משתמש</span>
+        </button>
         <button class="btn-cancel" onclick="closeEditUserModal()">
           <span id="lbl-modal-cancel">ביטול</span>
         </button>
@@ -2023,6 +2278,16 @@
       document.getElementById('tab-btn-' + tabName).classList.add('active');
     }
 
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
     // ============================================================
     // USER LIST
     // ============================================================
@@ -2056,15 +2321,24 @@
         const item = document.createElement('div');
         item.className = 'user-item';
         item.onclick = () => openUserDetail(user.id);
+        const safeName = (user.username || user.email || 'משתמש').replace(/'/g, "\\'");
         item.innerHTML = `
           <div class="user-avatar">${initials}</div>
           <div class="user-info">
-            <div class="user-name">${user.username || 'Anonymous'}</div>
-            <div class="user-email">${user.email || ''}</div>
+            <div class="user-name">${escapeHtml(user.username || 'Anonymous')}</div>
+            <div class="user-email">${escapeHtml(user.email || '')}</div>
           </div>
           <div class="user-meta">
-            <span class="badge badge-${sub}">${subLabel(sub)}</span>
-            ${user.role === 'admin' ? '<span class="badge badge-admin"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg> Admin</span>' : ''}
+            <div class="user-badges-wrap">
+              <span class="badge badge-${sub}">${subLabel(sub)}</span>
+              ${user.role === 'admin' ? '<span class="badge badge-admin"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg> Admin</span>' : ''}
+            </div>
+            <button type="button" class="user-del-btn" onclick="event.stopPropagation(); deleteUserAdmin('${user.id}', '${safeName}')" title="מחק משתמש לצמיתות">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="3 6 5 6 21 6"></polyline>
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+              </svg>
+            </button>
             <span class="chevron">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                 <polyline points="15 18 9 12 15 6"></polyline>
@@ -2484,55 +2758,286 @@
     window.addEventListener('keydown', e => { if (e.key === 'Escape') closeEditUserModal(); });
 
     // ============================================================
-    // SETTINGS — SAVE
+    // USER DELETION
     // ============================================================
-    async function saveGlobalSettings() {
-      const systemPrompt        = document.getElementById('admin-system-prompt')?.value || '';
-      const imageActiveProvider = document.getElementById('admin-image-provider')?.value || 'puter';
-      const imageApiKey         = document.getElementById('admin-image-api-key')?.value.trim() || '';
-      const imageSystemPrompt   = document.getElementById('admin-image-prompt')?.value || '';
-      let imageGenModel         = document.getElementById('admin-image-model')?.value.trim() || '';
-      const imageModelSelect    = document.getElementById('admin-image-model-select')?.value;
-      if (!imageGenModel && imageModelSelect && imageModelSelect !== 'custom') imageGenModel = imageModelSelect;
-      const puterAuthToken = imageActiveProvider === 'puter' ? imageApiKey : undefined;
-
-      const btn = document.getElementById('btn-save-settings');
-      const origTxt = document.getElementById('btn-save-settings-text')?.textContent;
-      if (btn) btn.disabled = true;
-      if (document.getElementById('btn-save-settings-text')) document.getElementById('btn-save-settings-text').textContent = 'שומר...';
+    async function deleteUserAdmin(userId, username) {
+      if (!userId) return;
+      const nameStr = username ? `"${username}"` : 'משתמש זה';
+      const confirmed = confirm(`האם אתה בטוח שברצונך למחוק לצמיתות את ${nameStr}?\n\nפעולה זו תמחק גם את כל הפוסטים והקרוסלות של המשתמש ולא ניתנת לשחזור.`);
+      if (!confirmed) return;
 
       try {
-        const r = await fetch('/api/admin/settings', {
-          method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            systemPrompt, system_prompt: systemPrompt,
-            imageActiveProvider, image_active_provider: imageActiveProvider,
-            imageApiKey, image_api_key: imageApiKey,
-            imageGenModel, image_gen_model: imageGenModel,
-            imageSystemPrompt, image_system_prompt: imageSystemPrompt,
-            puterAuthToken, puter_auth_token: puterAuthToken,
-            apiKey: '', selectedModel: '@cf/meta/llama-3.3-70b-instruct-fp8-fast',
-            activeProvider: 'cloudflare'
-          })
-        });
-        if (!r.ok) throw new Error('Error saving settings');
-        showToast('ההגדרות נשמרו בהצלחה!');
+        const res = await fetch(`/api/users/${userId}`, { method: 'DELETE' });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'שגיאה במחיקת המשתמש');
+
+        showToast('המשתמש נמחק בהצלחה');
+        usersDb = usersDb.filter(u => String(u.id) !== String(userId));
+        postsDb = postsDb.filter(p => String(p.userId || p.user_id) !== String(userId) && p.username !== (data.user?.username || username));
+
+        renderStats();
+        renderUsersList(usersDb);
+        renderPostsList(postsDb);
+
+        if (currentDetailUserId && String(currentDetailUserId) === String(userId)) {
+          closeUserDetail();
+        }
+        if (editingUserId && String(editingUserId) === String(userId)) {
+          closeEditUserModal();
+        }
       } catch (err) {
         showToast('שגיאה: ' + err.message);
+      }
+    }
+
+    function deleteUserFromDetail() {
+      if (!currentDetailUserId) return;
+      const u = usersDb.find(x => String(x.id) === String(currentDetailUserId));
+      deleteUserAdmin(currentDetailUserId, u?.username || u?.email);
+    }
+
+    function deleteUserFromModal() {
+      if (!editingUserId) return;
+      const u = usersDb.find(x => String(x.id) === String(editingUserId));
+      deleteUserAdmin(editingUserId, u?.username || u?.email);
+    }
+
+    // ============================================================
+    // LANGUAGE MODELS (CLOUDFLARE WORKERS AI)
+    // ============================================================
+    let textModelsList = [
+      { id: '@cf/meta/llama-3.3-70b-instruct-fp8-fast', name: 'Meta Llama 3.3 70B Instruct (FP8 Fast - מומלץ)' },
+      { id: '@cf/meta/llama-3.1-8b-instruct-fast', name: 'Meta Llama 3.1 8B Instruct Fast (מהיר וקליל)' },
+      { id: '@cf/meta/llama-3.2-3b-instruct', name: 'Meta Llama 3.2 3B Instruct (קומפקטי וחסכוני)' },
+      { id: '@cf/meta/llama-3.2-1b-instruct', name: 'Meta Llama 3.2 1B Instruct (אולטרה-מהיר)' },
+      { id: '@cf/meta/llama-3.1-70b-instruct', name: 'Meta Llama 3.1 70B Instruct (עמוק ואיכותי)' },
+      { id: '@cf/deepseek-ai/deepseek-r1-distill-qwen-32b', name: 'DeepSeek R1 Distill Qwen 32B (חשיבה עמוקה והיגיון)' },
+      { id: '@cf/qwen/qwq-32b', name: 'Qwen QwQ 32B (היגיון מתקדם)' },
+      { id: '@cf/qwen/qwen3-30b-a3b-fp8', name: 'Qwen 3 30B A3B FP8 (דור הבא)' },
+      { id: '@cf/qwen/qwen2.5-72b-instruct', name: 'Qwen 2.5 72B Instruct (מודל ענק מתקדם)' },
+      { id: '@cf/mistral/mistral-7b-instruct-v0.2', name: 'Mistral 7B Instruct v0.2' },
+      { id: '@cf/google/gemma-7b-it', name: 'Google Gemma 7B IT' }
+    ];
+
+    async function fetchTextModels(forceRefresh = false) {
+      const btn = document.getElementById('btn-refresh-text-models');
+      const badge = document.getElementById('text-models-badge');
+      if (btn) btn.classList.add('spinning');
+      try {
+        const res = await fetch('/api/admin/models?type=text');
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data.models) && data.models.length > 0) {
+            textModelsList = data.models;
+            if (badge) badge.textContent = `Cloudflare AI (${textModelsList.length} מודלים)`;
+          }
+        }
+      } catch (err) {
+        console.warn('Could not fetch text models:', err);
       } finally {
-        if (btn) btn.disabled = false;
-        if (document.getElementById('btn-save-settings-text')) document.getElementById('btn-save-settings-text').textContent = origTxt;
+        if (btn) btn.classList.remove('spinning');
+      }
+
+      const sel = document.getElementById('admin-model-select');
+      const customInp = document.getElementById('admin-model-custom');
+      const currentVal = customInp?.value || sel?.value || '@cf/meta/llama-3.3-70b-instruct-fp8-fast';
+
+      if (sel) {
+        sel.innerHTML = textModelsList.map(m => `<option value="${escapeHtml(m.id)}">${escapeHtml(m.name || m.id)}</option>`).join('') +
+          `<option value="custom">מודל מותאם אישית ב-Cloudflare...</option>`;
+
+        const match = textModelsList.find(m => m.id === currentVal);
+        if (match) {
+          sel.value = currentVal;
+          if (customInp) customInp.style.display = 'none';
+        } else if (currentVal && currentVal !== 'custom') {
+          sel.value = 'custom';
+          if (customInp) {
+            customInp.style.display = 'block';
+            customInp.value = currentVal;
+          }
+        }
+      }
+      updateActiveLlmBanner();
+      if (forceRefresh) showToast('רשימת מודלי השפה של Cloudflare עודכנה!');
+    }
+
+    function onTextModelSelectChange() {
+      const sel = document.getElementById('admin-model-select');
+      const customInp = document.getElementById('admin-model-custom');
+      if (!sel) return;
+      if (sel.value === 'custom') {
+        if (customInp) {
+          customInp.style.display = 'block';
+          customInp.focus();
+        }
+      } else {
+        if (customInp) {
+          customInp.style.display = 'none';
+          customInp.value = sel.value;
+        }
+      }
+      updateActiveLlmBanner();
+    }
+
+    function onCustomTextModelInput() {
+      updateActiveLlmBanner();
+    }
+
+    function updateActiveLlmBanner() {
+      const sel = document.getElementById('admin-model-select');
+      const customInp = document.getElementById('admin-model-custom');
+      const idEl = document.getElementById('active-llm-id');
+      const titleEl = document.getElementById('active-llm-title');
+      const val = (sel?.value === 'custom' ? customInp?.value.trim() : sel?.value) || '@cf/meta/llama-3.3-70b-instruct-fp8-fast';
+      if (idEl) idEl.textContent = val;
+      const modelObj = textModelsList.find(m => m.id === val);
+      if (titleEl) {
+        titleEl.textContent = modelObj ? modelObj.name : 'Cloudflare Workers AI — פעיל';
       }
     }
 
     // ============================================================
-    // IMAGE PROVIDER LOGIC
+    // IMAGE MODELS LOGIC (LIVE FETCH PER PROVIDER)
     // ============================================================
+    let imageModelsCache = {};
+
+    async function fetchImageModelsForProvider(provider, forceRefresh = false) {
+      const btn = document.getElementById('btn-refresh-image-models');
+      const badge = document.getElementById('image-models-badge');
+      const sel = document.getElementById('admin-image-model-select');
+      const customInp = document.getElementById('admin-image-model');
+      const key = document.getElementById('admin-image-api-key')?.value.trim() || '';
+
+      if (btn) btn.classList.add('spinning');
+
+      let models = [];
+      let isLive = false;
+
+      try {
+        const url = `/api/admin/models?type=image&provider=${encodeURIComponent(provider)}&apiKey=${encodeURIComponent(key)}`;
+        const res = await fetch(url);
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data.models) && data.models.length > 0) {
+            models = data.models;
+            isLive = Boolean(data.live);
+            imageModelsCache[provider] = { models, isLive };
+          }
+        }
+      } catch (err) {
+        console.warn('Could not fetch image models from server:', err);
+      } finally {
+        if (btn) btn.classList.remove('spinning');
+      }
+
+      if (models.length === 0 && imageModelsCache[provider]?.models?.length > 0) {
+        models = imageModelsCache[provider].models;
+        isLive = imageModelsCache[provider].isLive;
+      }
+
+      if (badge) {
+        if (isLive) {
+          badge.className = 'live-model-badge';
+          badge.textContent = `חיבור חי לספק (${models.length} מודלים)`;
+        } else {
+          badge.className = 'live-model-badge catalog';
+          badge.textContent = `קטלוג מומלץ (${models.length} מודלים)`;
+        }
+      }
+
+      const targetVal = customInp?.value || sel?.value || '';
+
+      if (sel) {
+        sel.innerHTML = models.map(m => `<option value="${escapeHtml(m.id)}">${escapeHtml(m.name || m.id)}</option>`).join('') +
+          `<option value="custom">מודל מותאם אישית...</option>`;
+
+        const match = models.find(m => m.id === targetVal);
+        if (match) {
+          sel.value = targetVal;
+          if (customInp) customInp.style.display = 'none';
+        } else if (targetVal && targetVal !== 'custom') {
+          sel.value = 'custom';
+          if (customInp) {
+            customInp.style.display = 'block';
+            customInp.value = targetVal;
+          }
+        } else if (models.length > 0) {
+          sel.value = models[0].id;
+          if (customInp) {
+            customInp.style.display = 'none';
+            customInp.value = models[0].id;
+          }
+        }
+      }
+
+      if (forceRefresh) showToast(`רשימת מודלי תמונות עבור ${provider} עודכנה!`);
+    }
+
     function onImageModelSelectChange() {
       const sel = document.getElementById('admin-image-model-select');
       const inp = document.getElementById('admin-image-model');
-      if (sel.value === 'custom') { inp.style.display = 'block'; inp.focus(); }
-      else { inp.style.display = 'none'; inp.value = sel.value; }
+      if (!sel || !inp) return;
+      if (sel.value === 'custom') {
+        inp.style.display = 'block';
+        inp.focus();
+      } else {
+        inp.style.display = 'none';
+        inp.value = sel.value;
+      }
+    }
+
+    function onRefreshImageModelsClick() {
+      const provider = document.getElementById('admin-image-provider')?.value || 'cloudflare';
+      fetchImageModelsForProvider(provider, true);
+    }
+
+    function onApiKeyBlur() {
+      const provider = document.getElementById('admin-image-provider')?.value || 'cloudflare';
+      if (['google', 'huggingface', 'openrouter'].includes(provider)) {
+        fetchImageModelsForProvider(provider);
+      }
+    }
+
+    function onImageProviderChange() {
+      const provider = document.getElementById('admin-image-provider')?.value || 'cloudflare';
+      const keyInput = document.getElementById('admin-image-api-key');
+      const hint = document.getElementById('image-api-key-hint');
+      const btnPuter = document.getElementById('btn-puter-login');
+
+      if (provider === 'cloudflare') {
+        if (btnPuter) btnPuter.style.display = 'none';
+        if (keyInput) keyInput.placeholder = 'לא נדרש מפתח לשירות החינמי...';
+        if (hint) { hint.style.display = 'block'; hint.className = 'input-hint hint-ok'; hint.innerHTML = 'מחובר ל-Cloudflare Workers AI חינמי.'; }
+      } else if (provider === 'puter') {
+        if (keyInput) keyInput.placeholder = "Puter Auth Token...";
+        if (btnPuter) btnPuter.style.display = 'flex';
+        if (hint) { hint.style.display = 'block'; hint.className = 'input-hint hint-info'; hint.innerHTML = "לחץ 'התחבר עם Puter' לאימות אוטומטי."; }
+        if (typeof puter !== 'undefined' && puter.auth && puter.auth.isSignedIn()) {
+          puter.auth.getUser().then(u => {
+            if (u?.username && hint) { hint.className = 'input-hint hint-ok'; hint.innerHTML = `מחובר: ${u.username}`; }
+            if (keyInput && !keyInput.value && puter.authToken) keyInput.value = puter.authToken;
+          }).catch(()=>{});
+        }
+      } else if (provider === 'google') {
+        if (btnPuter) btnPuter.style.display = 'none';
+        if (keyInput) keyInput.placeholder = 'Google AI Studio API key (AIzaSy...)';
+        if (hint) hint.style.display = 'none';
+      } else if (provider === 'openai') {
+        if (btnPuter) btnPuter.style.display = 'none';
+        if (keyInput) keyInput.placeholder = 'OpenAI API key (sk-...)';
+        if (hint) hint.style.display = 'none';
+      } else if (provider === 'openrouter') {
+        if (btnPuter) btnPuter.style.display = 'none';
+        if (keyInput) keyInput.placeholder = 'OpenRouter API key (sk-or-...)';
+        if (hint) hint.style.display = 'none';
+      } else if (provider === 'huggingface') {
+        if (btnPuter) btnPuter.style.display = 'none';
+        if (keyInput) keyInput.placeholder = 'Hugging Face Token (hf_...)';
+        if (hint) hint.style.display = 'none';
+      }
+
+      fetchImageModelsForProvider(provider);
     }
 
     async function openPuterAuthWindow() {
@@ -2559,89 +3064,54 @@
       }
     }
 
-    function onImageProviderChange() {
-      const provider = document.getElementById('admin-image-provider').value;
-      const keyInput = document.getElementById('admin-image-api-key');
-      const modelSelect = document.getElementById('admin-image-model-select');
-      const customInput = document.getElementById('admin-image-model');
-      const hint = document.getElementById('image-api-key-hint');
-      const btnPuter = document.getElementById('btn-puter-login');
-
-      let models = [];
-      if (provider === 'cloudflare') {
-        if (btnPuter) btnPuter.style.display = 'none';
-        keyInput.placeholder = 'לא נדרש מפתח לשירות החינמי...';
-        if (hint) { hint.style.display = 'block'; hint.className = 'input-hint hint-ok'; hint.innerHTML = 'מחובר ל-Cloudflare Workers AI חינמי.'; }
-        models = [
-          { val: '@cf/black-forest-labs/flux-2-dev', desc: 'FLUX.2 Dev (32B — פוטוריאליסטי)' },
-          { val: '@cf/black-forest-labs/flux-1-schnell', desc: 'FLUX.1 Schnell (מהיר ואיכותי)' },
-          { val: '@cf/stabilityai/stable-diffusion-xl-base-1.0', desc: 'SDXL Base 1.0' },
-          { val: '@cf/bytedance/stable-diffusion-xl-lightning', desc: 'SDXL Lightning (אולטרה-מהיר)' },
-          { val: 'custom', desc: 'מודל מותאם אישית...' }
-        ];
-      } else if (provider === 'puter') {
-        keyInput.placeholder = "Puter Auth Token...";
-        if (btnPuter) btnPuter.style.display = 'flex';
-        if (hint) { hint.style.display = 'block'; hint.className = 'input-hint hint-info'; hint.innerHTML = "לחץ 'התחבר עם Puter' לאימות אוטומטי."; }
-        if (typeof puter !== 'undefined' && puter.auth && puter.auth.isSignedIn()) {
-          puter.auth.getUser().then(u => {
-            if (u?.username && hint) { hint.className = 'input-hint hint-ok'; hint.innerHTML = `מחובר: ${u.username}`; }
-            if (!keyInput.value && puter.authToken) keyInput.value = puter.authToken;
-          }).catch(()=>{});
-        }
-        models = [
-          { val: 'gpt-image-1-mini', desc: 'GPT Image 1 Mini (OpenAI — מהיר)' },
-          { val: 'gpt-image-1', desc: 'GPT Image 1 (OpenAI)' },
-          { val: 'gpt-image-2', desc: 'GPT Image 2 (OpenAI)' },
-          { val: 'black-forest-labs/flux-schnell', desc: 'FLUX.1 Schnell (Black Forest Labs)' },
-          { val: 'black-forest-labs/flux-1.1-pro', desc: 'FLUX 1.1 Pro' },
-          { val: 'custom', desc: 'מודל מותאם אישית...' }
-        ];
-      } else if (provider === 'google') {
-        if (btnPuter) btnPuter.style.display = 'none';
-        keyInput.placeholder = 'Google AI Studio API key (AIzaSy...)';
-        if (hint) hint.style.display = 'none';
-        models = [
-          { val: 'imagen-3.0-generate-001', desc: 'Imagen 3.0 Standard' },
-          { val: 'imagen-3.0-fast-generate-001', desc: 'Imagen 3.0 Fast' },
-          { val: 'custom', desc: 'מודל מותאם...' }
-        ];
-      } else if (provider === 'openai') {
-        if (btnPuter) btnPuter.style.display = 'none';
-        keyInput.placeholder = 'OpenAI API key (sk-...)';
-        if (hint) hint.style.display = 'none';
-        models = [
-          { val: 'dall-e-3', desc: 'DALL-E 3' },
-          { val: 'dall-e-2', desc: 'DALL-E 2' },
-          { val: 'custom', desc: 'מודל מותאם...' }
-        ];
-      } else if (provider === 'openrouter') {
-        if (btnPuter) btnPuter.style.display = 'none';
-        keyInput.placeholder = 'OpenRouter API key (sk-or-...)';
-        if (hint) hint.style.display = 'none';
-        models = [
-          { val: 'google/gemini-2.5-flash-image', desc: 'Gemini 2.5 Flash Image' },
-          { val: 'black-forest-labs/flux-1-schnell', desc: 'FLUX.1 Schnell' },
-          { val: 'custom', desc: 'מודל מותאם...' }
-        ];
-      } else if (provider === 'huggingface') {
-        if (btnPuter) btnPuter.style.display = 'none';
-        keyInput.placeholder = 'Hugging Face Token (hf_...)';
-        if (hint) hint.style.display = 'none';
-        models = [
-          { val: 'RoiChocron/FLUX.1-schnell-bucket', desc: 'FLUX.1 Schnell Bucket (RoiChocron)' },
-          { val: 'black-forest-labs/FLUX.1-schnell', desc: 'FLUX.1 Schnell' },
-          { val: 'custom', desc: 'מודל מותאם...' }
-        ];
+    // ============================================================
+    // SETTINGS — SAVE
+    // ============================================================
+    async function saveGlobalSettings() {
+      const systemPrompt        = document.getElementById('admin-system-prompt')?.value || '';
+      const imageActiveProvider = document.getElementById('admin-image-provider')?.value || 'puter';
+      const imageApiKey         = document.getElementById('admin-image-api-key')?.value.trim() || '';
+      const imageSystemPrompt   = document.getElementById('admin-image-prompt')?.value || '';
+      let imageGenModel         = document.getElementById('admin-image-model')?.value.trim() || '';
+      const imageModelSelect    = document.getElementById('admin-image-model-select')?.value;
+      if (imageModelSelect !== 'custom') {
+        imageGenModel = imageModelSelect || imageGenModel;
       }
 
-      if (modelSelect) {
-        modelSelect.innerHTML = models.map(m => `<option value="${m.val}">${m.desc}</option>`).join('');
-        if (customInput) customInput.style.display = 'none';
-        if (models.length > 0) {
-          modelSelect.value = models[0].val;
-          if (customInput) customInput.value = models[0].val;
-        }
+      let selectedModel = document.getElementById('admin-model-select')?.value || '@cf/meta/llama-3.3-70b-instruct-fp8-fast';
+      if (selectedModel === 'custom') {
+        selectedModel = document.getElementById('admin-model-custom')?.value.trim() || '@cf/meta/llama-3.3-70b-instruct-fp8-fast';
+      }
+
+      const puterAuthToken = imageActiveProvider === 'puter' ? imageApiKey : undefined;
+
+      const btn = document.getElementById('btn-save-settings');
+      const origTxt = document.getElementById('btn-save-settings-text')?.textContent;
+      if (btn) btn.disabled = true;
+      if (document.getElementById('btn-save-settings-text')) document.getElementById('btn-save-settings-text').textContent = 'שומר...';
+
+      try {
+        const r = await fetch('/api/admin/settings', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            systemPrompt, system_prompt: systemPrompt,
+            imageActiveProvider, image_active_provider: imageActiveProvider,
+            imageApiKey, image_api_key: imageApiKey,
+            imageGenModel, image_gen_model: imageGenModel,
+            imageSystemPrompt, image_system_prompt: imageSystemPrompt,
+            puterAuthToken, puter_auth_token: puterAuthToken,
+            selectedModel, selected_model: selectedModel,
+            activeProvider: 'cloudflare'
+          })
+        });
+        if (!r.ok) throw new Error('שגיאה בשמירת הגדרות');
+        updateActiveLlmBanner();
+        showToast('ההגדרות נשמרו בהצלחה!');
+      } catch (err) {
+        showToast('שגיאה: ' + err.message);
+      } finally {
+        if (btn) btn.disabled = false;
+        if (document.getElementById('btn-save-settings-text')) document.getElementById('btn-save-settings-text').textContent = origTxt;
       }
     }
 
@@ -2679,6 +3149,12 @@
     // INIT
     // ============================================================
     async function init() {
+      // 1. Explicitly clear search inputs to avoid browser pre-fill
+      const userSearchInput = document.getElementById('user-search');
+      if (userSearchInput) userSearchInput.value = '';
+      const postSearchInput = document.getElementById('post-search');
+      if (postSearchInput) postSearchInput.value = '';
+
       try {
         const meRes = await fetch('/api/auth/me');
         if (!meRes.ok) { window.location.href = 'login.html'; return; }
@@ -2701,6 +3177,13 @@
             const s = await r.json();
             const sp = document.getElementById('admin-system-prompt');
             if (sp) sp.value = s.systemPrompt || s.system_prompt || '';
+
+            const selM = s.selectedModel || s.selected_model || '@cf/meta/llama-3.3-70b-instruct-fp8-fast';
+            const selEl = document.getElementById('admin-model-select');
+            const customEl = document.getElementById('admin-model-custom');
+            if (customEl) customEl.value = selM;
+            if (selEl) selEl.value = selM;
+
             const ip = document.getElementById('admin-image-provider');
             if (ip) ip.value = s.imageActiveProvider || s.image_active_provider || 'puter';
             const ik = document.getElementById('admin-image-api-key');
@@ -2709,7 +3192,6 @@
             if (im) im.value = s.imageGenModel || s.image_gen_model || '';
             const ipr = document.getElementById('admin-image-prompt');
             if (ipr) ipr.value = s.imageSystemPrompt || s.image_system_prompt || '';
-            onImageProviderChange();
           }
         } catch(e) { console.warn('Could not load settings:', e); }
 
@@ -2717,14 +3199,24 @@
         console.warn('Admin init error:', e);
       }
 
-      // Always render
+      // Render initial UI
       renderStats();
       renderUsersList(usersDb);
       renderPostsList(postsDb);
+
+      // Fetch live models for text and image
+      await fetchTextModels();
       onImageProviderChange();
     }
 
     window.onload = init;
+
+    window.addEventListener('pageshow', () => {
+      const u = document.getElementById('user-search');
+      if (u) u.value = '';
+      const p = document.getElementById('post-search');
+      if (p) p.value = '';
+    });
 
   </script>
 </body>

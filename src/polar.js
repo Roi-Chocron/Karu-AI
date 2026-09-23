@@ -1,5 +1,6 @@
 import { Hono } from 'hono';
 import { authenticateToken } from './auth.js';
+import { recordUserLog } from './logger.js';
 
 export const polarApp = new Hono();
 
@@ -98,8 +99,24 @@ polarApp.post('/api/polar/create-checkout', authenticateToken, async (c) => {
     const data = await res.json();
     if (!res.ok || !data.url) {
       console.error('Polar create checkout failed:', data);
+      await recordUserLog(c, {
+        userId: user.id,
+        action: 'payment_checkout_failed',
+        level: 'WARN',
+        message: `Failed creating checkout for plan ${normalizedPlan}`,
+        statusCode: res.status || 500
+      });
       return c.json({ error: data.detail || 'Failed to create Polar checkout session' }, res.status || 500);
     }
+
+    await recordUserLog(c, {
+      userId: user.id,
+      action: 'payment_checkout',
+      level: 'INFO',
+      message: `User created checkout for plan "${normalizedPlan}"`,
+      statusCode: 200,
+      details: { plan: normalizedPlan, checkoutId: data.id }
+    });
 
     return c.json({
       success: true,
@@ -198,6 +215,15 @@ polarApp.post('/api/polar/webhook', async (c) => {
           WHERE LOWER(TRIM(email)) = LOWER(TRIM(?))
         `).bind(plan, quota, customerId, productId, customerEmail).run();
         console.log(`[Polar Webhook] Order applied for ${customerEmail}: plan=${plan}, added ${quota} posts`);
+
+        await recordUserLog(c, {
+          username: customerEmail,
+          action: 'payment_order_applied',
+          level: 'INFO',
+          message: `Payment received from ${customerEmail}: Plan "${plan}", added ${quota} posts`,
+          statusCode: 200,
+          details: { customerEmail, plan, quota, productId }
+        });
       }
     }
 
@@ -222,6 +248,15 @@ polarApp.post('/api/polar/webhook', async (c) => {
           WHERE LOWER(TRIM(email)) = LOWER(TRIM(?))
         `).bind(plan, quota, quota, customerId, subscriptionId, productId, customerEmail).run();
         console.log(`[Polar Webhook] Subscription updated for ${customerEmail}: plan=${plan}`);
+
+        await recordUserLog(c, {
+          username: customerEmail,
+          action: 'payment_subscription_updated',
+          level: 'INFO',
+          message: `Subscription updated for ${customerEmail}: plan=${plan} (Status: ${status})`,
+          statusCode: 200,
+          details: { customerEmail, plan, quota, subscriptionId, status }
+        });
       }
     }
 
@@ -236,6 +271,14 @@ polarApp.post('/api/polar/webhook', async (c) => {
           WHERE polar_subscription_id = ?
         `).bind(subscriptionId).run();
         console.log(`[Polar Webhook] Subscription revoked: ${subscriptionId}`);
+
+        await recordUserLog(c, {
+          action: 'payment_subscription_revoked',
+          level: 'WARN',
+          message: `Subscription revoked (ID: ${subscriptionId})`,
+          statusCode: 200,
+          details: { subscriptionId }
+        });
       }
     }
 

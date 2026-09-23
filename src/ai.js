@@ -1,5 +1,6 @@
 import { Hono } from 'hono';
 import { authenticateToken } from './auth.js';
+import { recordUserLog } from './logger.js';
 
 export const aiApp = new Hono();
 
@@ -159,12 +160,23 @@ function extractCarouselJson(input) {
   return null;
 }
 
-// ─── Helper: generate a single image via Cloudflare Workers AI SDXL ─────────
+// ─── Helper: generate a single image via Cloudflare Workers AI ─────────
 async function generateWorkerImage(c, promptText) {
   const ai = c.env.AI;
   const kv = c.env.KARU_MEDIA;
   const db = c.env.DB;
-  const selectedModel = '@cf/stabilityai/stable-diffusion-xl-base-1.0';
+  let selectedModel = '@cf/black-forest-labs/flux-1-schnell';
+
+  try {
+    const selRow = await db.prepare(
+      "SELECT value FROM settings WHERE key = 'image_gen_model' OR key = 'imageGenModel'"
+    ).first();
+    if (selRow && selRow.value && selRow.value.trim() && selRow.value.startsWith('@cf/')) {
+      selectedModel = selRow.value.trim();
+    }
+  } catch (err) {
+    console.warn('Could not read image_gen_model from settings:', err.message);
+  }
 
   const response = await ai.run(selectedModel, { prompt: promptText.trim() });
 
@@ -316,6 +328,15 @@ aiApp.post('/api/cloudflare-images/generate', async (c) => {
 
   try {
     const imageUrl = await generateWorkerImage(c, prompt.trim());
+
+    await recordUserLog(c, {
+      action: 'ai_cf_image',
+      level: 'INFO',
+      message: `Generated AI image for prompt: "${prompt.slice(0, 50)}..."`,
+      statusCode: 200,
+      details: { prompt: prompt.trim(), imageUrl }
+    });
+
     return c.json({
       success: true,
       image: {
@@ -326,6 +347,13 @@ aiApp.post('/api/cloudflare-images/generate', async (c) => {
     });
   } catch (err) {
     console.error('Cloudflare image generation error:', err);
+    await recordUserLog(c, {
+      action: 'ai_cf_image_error',
+      level: 'ERROR',
+      message: `Image generation failed: ${err.message}`,
+      statusCode: 500,
+      details: { prompt, error: err.message }
+    });
     return c.json({ error: `AI Generation failed: ${err.message}` }, 500);
   }
 });
@@ -363,6 +391,7 @@ aiApp.get('/api/cloudflare-images/stats', async (c) => {
 
 // 4. BATCH GENERATE IMAGES
 aiApp.post('/api/generate-images', authenticateToken, async (c) => {
+  const user = c.get('user');
   const { prompts } = await c.req.json();
   if (!prompts || !Array.isArray(prompts)) {
     return c.json({ error: 'Invalid prompts array' }, 400);
@@ -379,6 +408,17 @@ aiApp.post('/api/generate-images', authenticateToken, async (c) => {
       results.push({ prompt: promptText, error: err.message, success: false });
     }
   }
+
+  const successCount = results.filter(r => r.success).length;
+  await recordUserLog(c, {
+    userId: user?.id,
+    username: user?.username || user?.email,
+    action: 'ai_batch_images',
+    level: 'INFO',
+    message: `User generated batch images (${successCount}/${prompts.length} successful)`,
+    statusCode: 200,
+    details: { total: prompts.length, successCount }
+  });
 
   return c.json({ success: true, images: results });
 });
@@ -542,6 +582,16 @@ aiApp.post('/api/chat', authenticateToken, async (c) => {
             WHERE id = ?
           `).bind(title, description, hashtags, carouselData, JSON.stringify(chatArr), activePostId).run();
 
+          await recordUserLog(c, {
+            userId: user.id,
+            username: user.username,
+            action: 'ai_generate_carousel',
+            level: 'INFO',
+            message: `AI generated carousel "${title}" (${parsed.slides.length} slides)`,
+            statusCode: 200,
+            details: { postId: activePostId, title, slidesCount: parsed.slides.length, prompt: message }
+          });
+
           return {
             success: true,
             reply: replyText,
@@ -560,6 +610,16 @@ aiApp.post('/api/chat', authenticateToken, async (c) => {
             UPDATE posts SET chat_history = ? WHERE id = ?
           `).bind(JSON.stringify(chatArr), activePostId).run();
 
+          await recordUserLog(c, {
+            userId: user.id,
+            username: user.username,
+            action: 'ai_chat',
+            level: 'INFO',
+            message: `AI chat response generated for "${initialTitle}"`,
+            statusCode: 200,
+            details: { postId: activePostId, prompt: message }
+          });
+
           return {
             success: true,
             reply: replyText,
@@ -574,6 +634,17 @@ aiApp.post('/api/chat', authenticateToken, async (c) => {
           await db.prepare('UPDATE posts SET chat_history = ? WHERE id = ?')
             .bind(JSON.stringify(chatArr), activePostId).run();
         } catch (e) {}
+
+        await recordUserLog(c, {
+          userId: user.id,
+          username: user.username,
+          action: 'ai_generate_error',
+          level: 'ERROR',
+          message: `AI carousel generation error: ${genErr.message}`,
+          statusCode: 500,
+          details: { postId: activePostId, error: genErr.message, prompt: message }
+        });
+
         return { error: genErr.message, postId: activePostId };
       }
     };

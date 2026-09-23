@@ -1,5 +1,6 @@
 import { Hono } from 'hono';
 import { authenticateToken, requireAdmin } from './auth.js';
+import { recordUserLog } from './logger.js';
 
 export const postsApp = new Hono();
 
@@ -123,6 +124,14 @@ postsApp.post('/api/posts/:id/like', async (c) => {
     const newLikes = (post.likes_count || 0) + 1;
     await db.prepare('UPDATE posts SET likes_count = ? WHERE id = ?').bind(newLikes, id).run();
 
+    await recordUserLog(c, {
+      action: 'post_like',
+      level: 'INFO',
+      message: `Post ${id} liked (Total: ${newLikes})`,
+      statusCode: 200,
+      details: { postId: id, likesCount: newLikes }
+    });
+
     return c.json({ success: true, likes_count: newLikes });
   } catch (err) {
     return c.json({ error: 'Error updating likes' }, 500);
@@ -148,6 +157,16 @@ postsApp.post('/api/posts/:id/share-community', authenticateToken, async (c) => 
     const newIsShared = post.is_shared ? 0 : 1;
     await db.prepare('UPDATE posts SET is_shared = ? WHERE id = ?').bind(newIsShared, id).run();
 
+    await recordUserLog(c, {
+      userId: user.id,
+      username: user.username,
+      action: 'post_share',
+      level: 'INFO',
+      message: `Community sharing for post ${id} was ${newIsShared ? 'enabled' : 'disabled'}`,
+      statusCode: 200,
+      details: { postId: id, isShared: !!newIsShared }
+    });
+
     return c.json({ success: true, is_shared: newIsShared });
   } catch (err) {
     console.error('Share community error:', err);
@@ -172,6 +191,15 @@ postsApp.post('/api/posts', authenticateToken, async (c) => {
 
     const isUnlimited = (user.subscription === 'agency' || user.subscription === 'unlimited');
     if (!isUnlimited && user.posts_left <= 0) {
+      await recordUserLog(c, {
+        userId: userPayload.id,
+        username: user.username,
+        action: 'quota_exceeded',
+        level: 'WARN',
+        message: `User ${user.username} tried saving post without remaining quota`,
+        statusCode: 400,
+        details: { postsLeft: user.posts_left, subscription: user.subscription }
+      });
       return c.json({ error: 'You do not have enough remaining posts in your quota.' }, 400);
     }
 
@@ -197,9 +225,27 @@ postsApp.post('/api/posts', authenticateToken, async (c) => {
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).bind(postId, userPayload.id, user.username, title, description || '', hashtags || '', tokensPrompt, tokensSave, tokensAutopost, carouselData).run();
 
+    await recordUserLog(c, {
+      userId: userPayload.id,
+      username: user.username,
+      action: 'post_create',
+      level: 'INFO',
+      message: `User saved carousel post: "${title}" (${slides.length} slides)`,
+      statusCode: 200,
+      details: { postId, title, slidesCount: slides.length, tokensPrompt, tokensSave }
+    });
+
     return c.json({ success: true, postId });
   } catch (err) {
     console.error('Save post error:', err);
+    await recordUserLog(c, {
+      userId: userPayload.id,
+      action: 'post_save_error',
+      level: 'ERROR',
+      message: `Error saving post: ${err.message}`,
+      statusCode: 500,
+      details: { error: err.message }
+    });
     return c.json({ error: 'Error saving carousel post' }, 500);
   }
 });
@@ -211,7 +257,7 @@ postsApp.delete('/api/posts/:postId', authenticateToken, async (c) => {
   const db = c.env.DB;
 
   try {
-    const post = await db.prepare('SELECT user_id FROM posts WHERE id = ?').bind(postId).first();
+    const post = await db.prepare('SELECT user_id, title FROM posts WHERE id = ?').bind(postId).first();
     if (!post) return c.json({ error: 'Post not found' }, 404);
 
     const isAdmin = (user.email === 'roi@karu.ai' || user.role === 'admin');
@@ -220,6 +266,17 @@ postsApp.delete('/api/posts/:postId', authenticateToken, async (c) => {
     }
 
     await db.prepare('DELETE FROM posts WHERE id = ?').bind(postId).run();
+
+    await recordUserLog(c, {
+      userId: user.id,
+      username: user.username,
+      action: 'post_delete',
+      level: 'INFO',
+      message: `Deleted post: "${post.title || postId}" (${postId})`,
+      statusCode: 200,
+      details: { postId, title: post.title }
+    });
+
     return c.json({ success: true, message: 'Post deleted successfully' });
   } catch (err) {
     return c.json({ error: 'Error deleting post' }, 500);
