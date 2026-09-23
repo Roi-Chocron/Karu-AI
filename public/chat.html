@@ -1702,8 +1702,16 @@
 
       container.innerHTML = posts.map(post => {
         const slideCount = (post.slides || []).length;
+        const isGenerating = post.status === 'generating' || (slideCount === 0 && (!post.slides || post.slides.length === 0));
         const displayTitle = post.title || post.description?.slice(0, 45) || 'Carousel Conversation';
         const displayDate = post.date || (post.created_at ? new Date(post.created_at).toLocaleDateString('en-US') : 'Recent');
+
+        const badgeHtml = isGenerating
+          ? `<span style="display: inline-flex; align-items: center; gap: 4px; color: #ef4444; font-weight: 700; font-size: 11px; background: rgba(239,68,68,0.08); padding: 2px 8px; border-radius: 999px;">
+               <svg class="spinner" width="10" height="10" viewBox="0 0 50 50" style="animation: rotate 2s linear infinite; color: #ef4444;"><circle cx="25" cy="25" r="20" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round" style="stroke-dasharray: 1, 150; stroke-dashoffset: 0; animation: dash 1.5s ease-in-out infinite;"></circle></svg>
+               בתהליך יצירה...
+             </span>`
+          : `<span>${slideCount} slides</span>`;
 
         return `
           <div onclick="openChatConversation('${post.id}')" style="background: #ffffff; border: 1px solid #f3f4f6; border-radius: 14px; padding: 14px 16px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; transition: all 0.2s; box-shadow: 0 2px 8px rgba(0,0,0,0.03);" onmouseover="this.style.borderColor='#ef4444'; this.style.transform='translateY(-1px)';" onmouseout="this.style.borderColor='#f3f4f6'; this.style.transform='none';">
@@ -1716,7 +1724,7 @@
               <div style="display: flex; flex-direction: column; overflow: hidden; text-align: left;">
                 <span style="font-size: 14px; font-weight: 700; color: #111827; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${displayTitle}</span>
                 <span style="font-size: 11.5px; color: #6b7280; margin-top: 3px; display: flex; align-items: center; gap: 8px;">
-                  <span>${slideCount} slides</span>
+                  ${badgeHtml}
                   <span style="display: inline-block; width: 3px; height: 3px; border-radius: 50%; background: #d1d5db;"></span>
                   <span>${displayDate}</span>
                 </span>
@@ -1732,7 +1740,98 @@
       }).join('');
     }
 
+    let activePollInterval = null;
+
+    function showGeneratingPlaceholder() {
+      const container = document.getElementById('post-chat-card-container');
+      if (container) {
+        container.innerHTML = `
+          <div class="post-card placeholder-card" style="margin: 16px; border-radius: 16px; padding: 36px 16px; text-align: center; background: #ffffff; border: 1.5px dashed #ef4444; box-shadow: 0 4px 16px rgba(239,68,68,0.06); display: flex; flex-direction: column; align-items: center; gap: 14px;">
+            <svg class="spinner" width="36" height="36" viewBox="0 0 50 50" style="animation: rotate 2s linear infinite; color: #ef4444;"><circle cx="25" cy="25" r="20" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round" style="stroke-dasharray: 1, 150; stroke-dashoffset: 0; animation: dash 1.5s ease-in-out infinite;"></circle></svg>
+            <div style="font-weight: 800; font-size: 15px; color: #111827;">הקרוסלה נוצרת כעת ברקע... ⏳</div>
+            <div style="font-size: 12px; color: #6b7280; line-height: 1.45; max-width: 280px;">המודל עובד על יצירת ועיצוב השקופיות. גם אם תצא מהאתר או מהדף, התהליך יסתיים והקרוסלה תישמר!</div>
+          </div>
+        `;
+      }
+    }
+
+    function pollPostUntilReady(postId) {
+      if (activePollInterval) clearInterval(activePollInterval);
+      activePollInterval = setInterval(async () => {
+        try {
+          if (currentPostId !== postId) {
+            clearInterval(activePollInterval);
+            return;
+          }
+          const res = await fetch(`/api/posts/${postId}/chat`);
+          if (res.ok) {
+            const data = await res.json();
+            if (data.carousel && Array.isArray(data.carousel.slides) && data.carousel.slides.length > 0) {
+              clearInterval(activePollInterval);
+              renderChatCarousel(data.carousel);
+              const titleEl = document.getElementById('active-chat-title');
+              if (titleEl && data.carousel.title) titleEl.textContent = data.carousel.title;
+            }
+          }
+        } catch (e) {}
+      }, 2500);
+    }
+
+    // Client helper: clean unescaped chars in JSON strings
+    function clientCleanJsonString(str) {
+      let inString = false, escaped = false, out = '';
+      for (let i = 0; i < str.length; i++) {
+        const char = str[i];
+        if (char === '"' && !escaped) {
+          inString = !inString;
+          out += char;
+        } else if (inString) {
+          if (char === '\\') {
+            escaped = !escaped;
+            out += char;
+          } else {
+            escaped = false;
+            if (char === '\n') out += '\\n';
+            else if (char === '\r') out += '\\r';
+            else if (char === '\t') out += '\\t';
+            else if (char.charCodeAt(0) < 32) {}
+            else out += char;
+          }
+        } else {
+          escaped = false;
+          out += char;
+        }
+      }
+      return out;
+    }
+
+    function clientExtractCarouselJson(input) {
+      if (!input || typeof input !== 'string') return null;
+      let str = input.trim();
+      str = str.replace(/<think>[\s\S]*?(?:<\/think>|$)/gi, '').trim();
+      const fenceMatch = str.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
+      let candidate = fenceMatch ? fenceMatch[1].trim() : str;
+      const firstBrace = candidate.indexOf('{');
+      const lastBrace = candidate.lastIndexOf('}');
+      if (firstBrace !== -1 && lastBrace > firstBrace) {
+        candidate = candidate.substring(firstBrace, lastBrace + 1);
+      }
+      try {
+        const obj = JSON.parse(candidate);
+        const res = obj.carousel || obj;
+        if (res.slides && res.slides.length > 0) return res;
+      } catch(e) {}
+      try {
+        let cleaned = clientCleanJsonString(candidate).replace(/,\s*([\]}])/g, '$1');
+        const obj = JSON.parse(cleaned);
+        const res = obj.carousel || obj;
+        if (res.slides && res.slides.length > 0) return res;
+      } catch(e) {}
+      return null;
+    }
+
     async function openChatConversation(postId, knownPosts = null) {
+      if (activePollInterval) clearInterval(activePollInterval);
       const listScreen = document.getElementById('chat-list-screen');
       const chatScreen = document.getElementById('chat-screen');
       if (listScreen) listScreen.style.display = 'none';
@@ -1778,9 +1877,12 @@
             if (chatBox) chatBox.appendChild(div);
           });
 
-          // Render carousel in preview
+          // Render carousel in preview, or poll if generating
           if (data.carousel && Array.isArray(data.carousel.slides) && data.carousel.slides.length > 0) {
             renderChatCarousel(data.carousel);
+          } else if (data.carousel && (data.carousel.status === 'generating' || (!data.carousel.slides || data.carousel.slides.length === 0))) {
+            showGeneratingPlaceholder();
+            pollPostUntilReady(postId);
           }
 
           const scrollContainer = document.querySelector('.chat-scroll-container');
@@ -2126,6 +2228,11 @@
         let carouselObj = data.carousel;
         let replyText = data.reply;
 
+        if (data.postId) {
+          currentPostId = data.postId;
+          localStorage.setItem('lastPostId', currentPostId);
+        }
+
         if (typeof replyText === 'object' && replyText !== null) {
           if (replyText.slides && !carouselObj) {
             carouselObj = replyText;
@@ -2133,6 +2240,16 @@
           } else {
             replyText = replyText.message || replyText.text || JSON.stringify(replyText);
           }
+        }
+
+        // Client-side fallback if server didn't extract carousel directly
+        if (!carouselObj && typeof replyText === 'string') {
+          try {
+            const fallbackObj = clientExtractCarouselJson(replyText);
+            if (fallbackObj && Array.isArray(fallbackObj.slides) && fallbackObj.slides.length > 0) {
+              carouselObj = fallbackObj;
+            }
+          } catch(e) {}
         }
 
         const replyDiv = document.createElement('div');

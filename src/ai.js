@@ -70,6 +70,42 @@ Once the system replies with the URLs, output the final carousel JSON with image
 }
 </output_format>`;
 
+// ─── Helper: clean unescaped control chars inside JSON strings ───────────────
+function cleanJsonString(str) {
+  let inString = false;
+  let escaped = false;
+  let out = '';
+  for (let i = 0; i < str.length; i++) {
+    const char = str[i];
+    if (char === '"' && !escaped) {
+      inString = !inString;
+      out += char;
+    } else if (inString) {
+      if (char === '\\') {
+        escaped = !escaped;
+        out += char;
+      } else {
+        escaped = false;
+        if (char === '\n') {
+          out += '\\n';
+        } else if (char === '\r') {
+          out += '\\r';
+        } else if (char === '\t') {
+          out += '\\t';
+        } else if (char.charCodeAt(0) < 32) {
+          // ignore other non-printable control chars
+        } else {
+          out += char;
+        }
+      }
+    } else {
+      escaped = false;
+      out += char;
+    }
+  }
+  return out;
+}
+
 // ─── Helper: extract JSON from raw LLM output ────────────────────────────────
 function extractCarouselJson(input) {
   if (!input) return null;
@@ -84,14 +120,23 @@ function extractCarouselJson(input) {
   if (typeof input !== 'string') return null;
 
   let str = input.trim();
-  // Strip DeepSeek R1 <think>...</think> block
-  str = str.replace(/<think>[\s\S]*?<\/think>/gi, '').trim();
-  // Strip markdown fences
-  str = str.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim();
+  // Strip DeepSeek R1 <think> block (including unclosed <think> if cut off)
+  str = str.replace(/<think>[\s\S]*?(?:<\/think>|$)/gi, '').trim();
 
-  // Try direct parse
+  // Try extracting from markdown fence first if present
+  const fenceMatch = str.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
+  let candidate = fenceMatch ? fenceMatch[1].trim() : str;
+
+  // Extract from first { to last }
+  const firstBrace = candidate.indexOf('{');
+  const lastBrace = candidate.lastIndexOf('}');
+  if (firstBrace !== -1 && lastBrace > firstBrace) {
+    candidate = candidate.substring(firstBrace, lastBrace + 1);
+  }
+
+  // 1. Direct parse
   try {
-    const obj = JSON.parse(str);
+    const obj = JSON.parse(candidate);
     const res = obj.carousel || obj;
     if (typeof res.slides === 'string') {
       try { res.slides = JSON.parse(res.slides); } catch (e) {}
@@ -99,32 +144,17 @@ function extractCarouselJson(input) {
     if (res.type === 'image_plan' || (Array.isArray(res.slides) && res.slides.length > 0)) return res;
   } catch (e) {}
 
-  // Try extracting from first { to last }
-  const firstBrace = str.indexOf('{');
-  const lastBrace = str.lastIndexOf('}');
-  if (firstBrace !== -1 && lastBrace > firstBrace) {
-    const subStr = str.substring(firstBrace, lastBrace + 1);
-    try {
-      const obj = JSON.parse(subStr);
-      const res = obj.carousel || obj;
-      if (typeof res.slides === 'string') {
-        try { res.slides = JSON.parse(res.slides); } catch (e) {}
-      }
-      if (res.type === 'image_plan' || (Array.isArray(res.slides) && res.slides.length > 0)) return res;
-    } catch (e) {
-      try {
-        const sanitized = subStr.replace(/[\u0000-\u001F]+/g, (m) =>
-          m === '\n' ? '\\n' : m === '\r' ? '\\r' : m === '\t' ? '\\t' : ''
-        );
-        const obj = JSON.parse(sanitized);
-        const res = obj.carousel || obj;
-        if (typeof res.slides === 'string') {
-          try { res.slides = JSON.parse(res.slides); } catch (e2) {}
-        }
-        if (res.type === 'image_plan' || (Array.isArray(res.slides) && res.slides.length > 0)) return res;
-      } catch (e2) {}
+  // 2. Cleaned parse (escape newlines inside strings + remove trailing commas)
+  try {
+    let cleaned = cleanJsonString(candidate);
+    cleaned = cleaned.replace(/,\s*([\]}])/g, '$1');
+    const obj = JSON.parse(cleaned);
+    const res = obj.carousel || obj;
+    if (typeof res.slides === 'string') {
+      try { res.slides = JSON.parse(res.slides); } catch (e2) {}
     }
-  }
+    if (res.type === 'image_plan' || (Array.isArray(res.slides) && res.slides.length > 0)) return res;
+  } catch (e) {}
 
   return null;
 }
@@ -185,48 +215,18 @@ async function generateWorkerImage(c, promptText) {
   return imageUrl;
 }
 
-// ─── Helper: run LLM (Cloudflare Workers AI — DeepSeek R1 32B / Settings) ───
+// ─── Helper: run LLM (Cloudflare Workers AI only — @cf/meta/llama-3.2-3b-instruct) ─
 async function runLLMChat(c, messages) {
   const db = c.env.DB;
-  let selectedModel = '@cf/deepseek-ai/deepseek-r1-distill-qwen-32b';
-
+  // Use only the Cloudflare Workers AI llama-3.2-3b-instruct model as requested
   try {
-    const selRow = await db.prepare(
-      "SELECT value FROM settings WHERE key = 'selected_model' OR key = 'selectedModel'"
-    ).first();
-    if (selRow && selRow.value && selRow.value.trim()) {
-      const val = selRow.value.trim();
-      if (val.startsWith('@cf/')) {
-        selectedModel = val;
-      }
-    }
-  } catch (err) {
-    console.warn('Could not read selected_model from settings:', err.message);
-  }
-
-  try {
-    const aiRes = await c.env.AI.run(selectedModel, {
+    const aiRes = await c.env.AI.run('@cf/meta/llama-3.2-3b-instruct', {
       messages,
-      max_tokens: 4096,
-      temperature: 0.6
+      max_tokens: 4096
     });
     return typeof aiRes === 'string' ? aiRes : (aiRes.response || '');
   } catch (err) {
-    console.error(`LLM chat error with model ${selectedModel}:`, err);
-    // Fallback to Llama 3.3 70B if DeepSeek R1 temporarily times out or fails
-    if (selectedModel !== '@cf/meta/llama-3.3-70b-instruct-fp8-fast') {
-      try {
-        console.log('Attempting fallback to @cf/meta/llama-3.3-70b-instruct-fp8-fast...');
-        const fallbackRes = await c.env.AI.run('@cf/meta/llama-3.3-70b-instruct-fp8-fast', {
-          messages,
-          max_tokens: 4096,
-          temperature: 0.6
-        });
-        return typeof fallbackRes === 'string' ? fallbackRes : (fallbackRes.response || '');
-      } catch (fbErr) {
-        console.error('Fallback LLM chat error:', fbErr);
-      }
-    }
+    console.error('LLM chat error:', err);
     return '';
   }
 }
@@ -351,7 +351,7 @@ aiApp.post('/api/generate-images', authenticateToken, async (c) => {
   return c.json({ success: true, images: results });
 });
 
-// 5. CHAT / CAROUSEL GENERATION (LLM + IMAGE PIPELINE)
+// 5. CHAT / CAROUSEL GENERATION (LLM + IMAGE PIPELINE + BACKGROUND PERSISTENCE)
 aiApp.post('/api/chat', authenticateToken, async (c) => {
   const userPayload = c.get('user');
   const db = c.env.DB;
@@ -366,6 +366,64 @@ aiApp.post('/api/chat', authenticateToken, async (c) => {
       'SELECT id, username, subscription, posts_left FROM users WHERE id = ?'
     ).bind(userPayload.id).first();
     if (!user) return c.json({ error: 'User not found' }, 401);
+
+    let activePostId = postId || null;
+    const initialTitle = message.slice(0, 50).trim();
+
+    // Check quota for new post
+    if (!activePostId) {
+      if (user.subscription !== 'agency' && user.subscription !== 'unlimited' && user.posts_left <= 0) {
+        return c.json({ error: 'No remaining posts left in your current package.' }, 400);
+      }
+      activePostId = 'p_' + crypto.randomUUID().slice(0, 8);
+    }
+
+    // 1. Immediately create or update post in DB before running LLM
+    // This ensures the chat exists in the database even if user disconnects immediately!
+    const existingPost = await db.prepare('SELECT id, chat_history, title, carousel_data FROM posts WHERE id = ?')
+      .bind(activePostId).first();
+
+    let chatArr = [];
+    if (existingPost && existingPost.chat_history) {
+      try { chatArr = JSON.parse(existingPost.chat_history); } catch (e) {}
+    }
+    chatArr.push({ role: 'user', content: message });
+
+    if (existingPost) {
+      await db.prepare('UPDATE posts SET chat_history = ? WHERE id = ?')
+        .bind(JSON.stringify(chatArr), activePostId).run();
+    } else {
+      const initCarouselData = JSON.stringify({
+        id: activePostId,
+        author_name: user.username,
+        created_at: new Date().toISOString(),
+        status: 'generating',
+        title: initialTitle,
+        slides: []
+      });
+
+      await db.prepare(`
+        INSERT INTO posts (id, user_id, username, title, description, hashtags, tokens_prompt, tokens_save, tokens_autopost, carousel_data, chat_history)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).bind(
+        activePostId,
+        userPayload.id,
+        user.username,
+        initialTitle,
+        `קרוסלה בנושא: ${initialTitle}`,
+        '#KaruAI',
+        1200,
+        600,
+        0,
+        initCarouselData,
+        JSON.stringify(chatArr)
+      ).run();
+
+      if (user.subscription !== 'agency' && user.subscription !== 'unlimited' && user.posts_left > 0) {
+        await db.prepare('UPDATE users SET posts_left = posts_left - 1 WHERE id = ?')
+          .bind(userPayload.id).run();
+      }
+    }
 
     // Fetch system prompt from DB, fall back to default
     const sysPromptRow = await db.prepare("SELECT value FROM settings WHERE key = 'system_prompt'").first();
@@ -382,108 +440,112 @@ aiApp.post('/api/chat', authenticateToken, async (c) => {
     }
     messages.push({ role: 'user', content: message });
 
-    // 1st LLM call
-    let rawResponse = await runLLMChat(c, messages);
-    let parsed = extractCarouselJson(rawResponse);
+    // 2. Core Generation Task (Runs in background and is resilient to client disconnects)
+    const runGeneration = async () => {
+      try {
+        let rawResponse = await runLLMChat(c, messages);
+        let parsed = extractCarouselJson(rawResponse);
 
-    // If an image plan was generated, auto-generate images then call LLM again
-    if (parsed && parsed.type === 'image_plan' && Array.isArray(parsed.images) && parsed.images.length > 0) {
-      const generatedUrls = [];
-      for (const imgItem of parsed.images.slice(0, 3)) {
-        const desc = typeof imgItem === 'string' ? imgItem : (imgItem.description || imgItem.prompt || 'Modern artistic composition');
+        // Auto-generate images if image plan
+        if (parsed && parsed.type === 'image_plan' && Array.isArray(parsed.images) && parsed.images.length > 0) {
+          const generatedUrls = [];
+          for (const imgItem of parsed.images.slice(0, 3)) {
+            const desc = typeof imgItem === 'string' ? imgItem : (imgItem.description || imgItem.prompt || 'Modern artistic composition');
+            try {
+              const url = await generateWorkerImage(c, desc);
+              if (url) generatedUrls.push(url);
+            } catch (genErr) {
+              console.error('Auto image gen failed for prompt:', desc, genErr);
+            }
+          }
+
+          if (generatedUrls.length > 0) {
+            messages.push({ role: 'assistant', content: JSON.stringify(parsed) });
+            messages.push({
+              role: 'user',
+              content: `Images generated successfully. URLs: ${generatedUrls.join(', ')}. Now please generate the final carousel JSON. Embed the provided image URLs directly into html_content using <img src="..." style="width:100%;height:100%;object-fit:cover;position:absolute;top:0;left:0;opacity:0.35;z-index:1;" /> or CSS background-image. Output ONLY valid JSON starting with { and ending with }.`
+            });
+            rawResponse = await runLLMChat(c, messages);
+            parsed = extractCarouselJson(rawResponse);
+          }
+        }
+
+        let replyText = '';
+        if (parsed && Array.isArray(parsed.slides) && parsed.slides.length > 0) {
+          parsed.slides = enrichSlides(parsed.slides);
+          parsed.id = activePostId;
+          parsed.status = 'ready';
+
+          const title = parsed.title || parsed.slides[0]?.title || initialTitle;
+          const description = parsed.description || `קרוסלה בנושא: ${title}`;
+          const hashtags = parsed.hashtags || '#KaruAI';
+
+          const carouselData = JSON.stringify({
+            id: activePostId,
+            author_name: user.username,
+            created_at: new Date().toISOString(),
+            status: 'ready',
+            title,
+            description,
+            hashtags,
+            slides: parsed.slides
+          });
+
+          replyText = `הקרוסלה נוצרה בהצלחה! (${parsed.slides.length} שקופיות)`;
+          chatArr.push({ role: 'assistant', content: replyText });
+
+          await db.prepare(`
+            UPDATE posts SET title = ?, description = ?, hashtags = ?, carousel_data = ?, chat_history = ?
+            WHERE id = ?
+          `).bind(title, description, hashtags, carouselData, JSON.stringify(chatArr), activePostId).run();
+
+          return {
+            success: true,
+            reply: replyText,
+            carousel: parsed,
+            postId: activePostId
+          };
+        } else {
+          // If slides were not extracted, try cleaning raw text
+          const cleanRaw = typeof rawResponse === 'string'
+            ? rawResponse.replace(/<think>[\s\S]*?(?:<\/think>|$)/gi, '').trim()
+            : '';
+          replyText = cleanRaw || 'התקבלה תשובה מהמודל';
+          chatArr.push({ role: 'assistant', content: replyText });
+
+          await db.prepare(`
+            UPDATE posts SET chat_history = ? WHERE id = ?
+          `).bind(JSON.stringify(chatArr), activePostId).run();
+
+          return {
+            success: true,
+            reply: replyText,
+            carousel: null,
+            postId: activePostId
+          };
+        }
+      } catch (genErr) {
+        console.error('Background generation error:', genErr);
+        chatArr.push({ role: 'assistant', content: 'אירעה שגיאה במהלך יצירת הקרוסלה.' });
         try {
-          const url = await generateWorkerImage(c, desc);
-          if (url) generatedUrls.push(url);
-        } catch (genErr) {
-          console.error('Auto image gen failed for prompt:', desc, genErr);
-        }
+          await db.prepare('UPDATE posts SET chat_history = ? WHERE id = ?')
+            .bind(JSON.stringify(chatArr), activePostId).run();
+        } catch (e) {}
+        return { error: genErr.message, postId: activePostId };
       }
+    };
 
-      if (generatedUrls.length > 0) {
-        messages.push({ role: 'assistant', content: JSON.stringify(parsed) });
-        messages.push({
-          role: 'user',
-          content: `Images generated successfully. URLs: ${generatedUrls.join(', ')}. Now please generate the final carousel JSON. Embed the provided image URLs directly into html_content using <img src="..." style="width:100%;height:100%;object-fit:cover;position:absolute;top:0;left:0;opacity:0.35;z-index:1;" /> or CSS background-image. Output ONLY valid JSON starting with { and ending with }.`
-        });
-        rawResponse = await runLLMChat(c, messages);
-        parsed = extractCarouselJson(rawResponse);
-      }
+    // Keep Cloudflare Worker running in background even if client disconnects!
+    const taskPromise = runGeneration();
+    if (c.executionCtx && typeof c.executionCtx.waitUntil === 'function') {
+      c.executionCtx.waitUntil(taskPromise);
     }
 
-    let activePostId = postId || null;
-    let replyText = '';
-
-    if (parsed && Array.isArray(parsed.slides) && parsed.slides.length > 0) {
-      // Apply backend slide enrichment safety net
-      parsed.slides = enrichSlides(parsed.slides);
-
-      if (!activePostId) {
-        // Check post quota
-        if (user.subscription !== 'agency' && user.subscription !== 'unlimited' && user.posts_left <= 0) {
-          return c.json({ error: 'No remaining posts left in your current package.' }, 400);
-        }
-        activePostId = 'p_' + crypto.randomUUID().slice(0, 8);
-      }
-      parsed.id = activePostId;
-
-      const title = parsed.title || parsed.slides[0]?.title || message.slice(0, 60);
-      const description = parsed.description || `Carousel on topic: ${title}`;
-      const hashtags = parsed.hashtags || '#KaruAI';
-      const tokensPrompt = Math.floor(1000 + Math.random() * 1000);
-      const tokensSave = Math.floor(500 + Math.random() * 500);
-
-      const carouselData = JSON.stringify({
-        id: activePostId,
-        author_name: user.username,
-        created_at: new Date().toISOString(),
-        title,
-        description,
-        hashtags,
-        slides: parsed.slides
-      });
-
-      const existingPost = await db.prepare('SELECT id FROM posts WHERE id = ?').bind(activePostId).first();
-      if (existingPost) {
-        await db.prepare(`
-          UPDATE posts SET title = ?, description = ?, hashtags = ?, carousel_data = ?
-          WHERE id = ? AND (user_id = ? OR user_id IS NULL)
-        `).bind(title, description, hashtags, carouselData, activePostId, userPayload.id).run();
-      } else {
-        await db.prepare(`
-          INSERT INTO posts (id, user_id, username, title, description, hashtags, tokens_prompt, tokens_save, tokens_autopost, carousel_data)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `).bind(activePostId, userPayload.id, user.username, title, description, hashtags, tokensPrompt, tokensSave, 0, carouselData).run();
-
-        if (user.subscription !== 'agency' && user.subscription !== 'unlimited' && user.posts_left > 0) {
-          await db.prepare('UPDATE users SET posts_left = posts_left - 1 WHERE id = ?').bind(userPayload.id).run();
-        }
-      }
-
-      replyText = `הקרוסלה נוצרה בהצלחה! (${parsed.slides.length} שקופיות)`;
-    } else {
-      const cleanRaw = typeof rawResponse === 'string' ? rawResponse.replace(/<think>[\s\S]*?<\/think>/gi, '').trim() : '';
-      replyText = cleanRaw || 'התקבלה תשובה מהמודל';
+    const result = await taskPromise;
+    if (result.error) {
+      return c.json({ error: result.error, postId: activePostId }, 500);
     }
-
-    // Save chat history
-    if (activePostId) {
-      const existingForHistory = await db.prepare('SELECT chat_history FROM posts WHERE id = ?').bind(activePostId).first();
-      let chatArr = [];
-      if (existingForHistory && existingForHistory.chat_history) {
-        try { chatArr = JSON.parse(existingForHistory.chat_history); } catch (e) {}
-      }
-      chatArr.push({ role: 'user', content: message });
-      chatArr.push({ role: 'assistant', content: replyText });
-      await db.prepare('UPDATE posts SET chat_history = ? WHERE id = ?')
-        .bind(JSON.stringify(chatArr), activePostId).run();
-    }
-
-    return c.json({
-      success: true,
-      reply: replyText,
-      carousel: parsed && Array.isArray(parsed.slides) && parsed.slides.length > 0 ? parsed : null,
-      postId: activePostId
-    });
+    return c.json(result);
 
   } catch (err) {
     console.error('Chat error:', err);
