@@ -2274,8 +2274,14 @@
     function switchTab(tabName) {
       document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
       document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-      document.getElementById('pane-' + tabName).classList.add('active');
-      document.getElementById('tab-btn-' + tabName).classList.add('active');
+      const pane = document.getElementById('pane-' + tabName);
+      if (pane) pane.classList.add('active');
+      const btn = document.getElementById('tab-btn-' + tabName);
+      if (btn) btn.classList.add('active');
+      if (tabName === 'logs') {
+        populateGlobalLogsUserDropdown();
+        loadGlobalLogs();
+      }
     }
 
     function escapeHtml(str) {
@@ -2626,31 +2632,75 @@
       });
     }
 
-    function renderDetailLogs(userId) {
+    async function renderDetailLogs(userId) {
       const body = document.getElementById('user-logs-body');
       if (!body) return;
-      const logs = fakeLogsDb[userId] || [];
-      const filtered = currentLogFilter === 'ALL' ? logs : logs.filter(l => l.level === currentLogFilter);
+      body.innerHTML = `<div style="color:#9ca3af;padding:24px;text-align:center;font-size:12px;">טוען לוגים משרת D1...</div>`;
 
-      if (filtered.length === 0) {
-        body.innerHTML = `<div style="color:#6b7280;padding:24px;text-align:center;font-size:12px;">אין לוגים להצגה</div>`;
-        return;
+      try {
+        const lvlQuery = currentLogFilter !== 'ALL' ? `&level=${encodeURIComponent(currentLogFilter)}` : '';
+        const res = await fetch(`/api/users/${encodeURIComponent(userId)}/logs?limit=100${lvlQuery}`);
+        if (!res.ok) throw new Error('Status ' + res.status);
+        const data = await res.json();
+        const logs = data.logs || [];
+
+        if (logs.length === 0) {
+          body.innerHTML = `<div style="color:#6b7280;padding:24px;text-align:center;font-size:12px;">אין לוגים שמורים למשתמש זה</div>`;
+          return;
+        }
+
+        body.innerHTML = logs.map(log => {
+          const lvl = (log.level || 'INFO').toUpperCase();
+          const timeStr = log.time || (log.created_at ? new Date(log.created_at).toLocaleTimeString('he-IL', { hour12: false }) : '');
+          const detailsHtml = log.details ? `
+            <details style="margin-top:4px; width:100%;">
+              <summary style="cursor:pointer; color:#60a5fa; font-size:10px; user-select:none; font-family:var(--font-family);">מטא-דאטה (JSON)</summary>
+              <pre style="margin:4px 0 0; background:rgba(0,0,0,0.5); padding:6px; border-radius:4px; font-size:10px; color:#cbd5e1; overflow-x:auto; white-space:pre-wrap;">${escapeHtml(typeof log.details === 'object' ? JSON.stringify(log.details, null, 2) : log.details)}</pre>
+            </details>
+          ` : '';
+
+          const metaPill = (log.method && log.path) ? `<span style="font-size:10px; color:#9ca3af; background:#1e293b; padding:1px 5px; border-radius:3px;">${escapeHtml(log.method)} ${escapeHtml(log.path)}</span>` : '';
+          const durationStr = log.duration_ms ? `<span style="font-size:9px; color:#6b7280;">(${log.duration_ms}ms)</span>` : '';
+          const ipStr = log.ip ? `<span style="font-size:9px; color:#6b7280; direction:ltr;">${escapeHtml(log.ip)}</span>` : '';
+
+          return `
+            <div class="log-line" style="flex-direction:column; align-items:flex-start; padding:8px 0; border-bottom:1px solid rgba(255,255,255,0.06); gap:3px;">
+              <div style="display:flex; align-items:center; gap:6px; width:100%; flex-wrap:wrap;">
+                <span class="log-time">${timeStr}</span>
+                <span class="log-level ${lvl}">${lvl}</span>
+                <span style="font-size:10px; font-weight:700; color:var(--color-primary); background:rgba(14,165,233,0.12); padding:1px 6px; border-radius:4px;">${escapeHtml(log.action || 'event')}</span>
+                ${metaPill}
+                ${durationStr}
+                ${ipStr}
+              </div>
+              <div class="log-msg" style="margin-top:2px; font-size:11px; color:#e2e8f0; line-height:1.4;">${escapeHtml(log.message || '')}</div>
+              ${detailsHtml}
+            </div>
+          `;
+        }).join('');
+
+        body.scrollTop = body.scrollHeight;
+      } catch (err) {
+        console.error('Error fetching user logs:', err);
+        const fallback = fakeLogsDb[userId] || [];
+        const filtered = currentLogFilter === 'ALL' ? fallback : fallback.filter(l => l.level === currentLogFilter);
+        if (filtered.length === 0) {
+          body.innerHTML = `<div style="color:#ef4444;padding:24px;text-align:center;font-size:12px;">שגיאה בטעינת לוגים מהשרת</div>`;
+          return;
+        }
+        body.innerHTML = filtered.map(log => `
+          <div class="log-line">
+            <span class="log-time">${log.time}</span>
+            <span class="log-level ${log.level}">${log.level}</span>
+            <span class="log-msg">${log.msg}</span>
+          </div>
+        `).join('');
       }
-
-      body.innerHTML = filtered.map(log => `
-        <div class="log-line">
-          <span class="log-time">${log.time}</span>
-          <span class="log-level ${log.level}">${log.level}</span>
-          <span class="log-msg">${log.msg}</span>
-        </div>
-      `).join('');
-
-      body.scrollTop = body.scrollHeight;
     }
 
     function filterLogs(level, btn) {
       currentLogFilter = level;
-      document.querySelectorAll('.log-filter-btn').forEach(b => {
+      document.querySelectorAll('#detail-tab-logs .log-filter-btn').forEach(b => {
         b.className = 'log-filter-btn';
       });
       if (btn) {
@@ -2658,6 +2708,146 @@
         btn.classList.add(classMap[level] || 'active-all');
       }
       renderDetailLogs(currentDetailUserId);
+    }
+
+    // ============================================================
+    // GLOBAL ACTIVITY LOGS (ALL USERS)
+    // ============================================================
+    let currentGlobalLogLevel = 'ALL';
+    let globalLogsSearchTimeout = null;
+
+    function populateGlobalLogsUserDropdown() {
+      const select = document.getElementById('filter-log-user');
+      if (!select) return;
+      const currentVal = select.value;
+      select.innerHTML = '<option value="ALL">כל המשתמשים</option>';
+      usersDb.forEach(u => {
+        const opt = document.createElement('option');
+        opt.value = u.id;
+        opt.textContent = `${u.username || 'Anonymous'} (${u.email || u.id})`;
+        select.appendChild(opt);
+      });
+      if (currentVal) select.value = currentVal;
+    }
+
+    async function loadGlobalLogs() {
+      const body = document.getElementById('global-logs-body');
+      const badge = document.getElementById('global-logs-count-badge');
+      if (!body) return;
+
+      body.innerHTML = `<div style="color:#9ca3af;padding:32px;text-align:center;font-size:12px;">טוען יומן פעילות מהשרת...</div>`;
+
+      const searchInput = document.getElementById('global-log-search');
+      const userSelect = document.getElementById('filter-log-user');
+      const search = searchInput ? searchInput.value.trim() : '';
+      const userId = userSelect ? userSelect.value : 'ALL';
+
+      const params = new URLSearchParams();
+      params.set('limit', '100');
+      if (currentGlobalLogLevel !== 'ALL') params.set('level', currentGlobalLogLevel);
+      if (userId && userId !== 'ALL') params.set('user_id', userId);
+      if (search) params.set('search', search);
+
+      try {
+        const res = await fetch(`/api/admin/logs?${params.toString()}`);
+        if (!res.ok) throw new Error('Status ' + res.status);
+        const data = await res.json();
+        const logs = data.logs || [];
+
+        if (badge) {
+          badge.textContent = `${data.total || logs.length} רשומות`;
+        }
+
+        if (logs.length === 0) {
+          body.innerHTML = `<div style="color:#6b7280;padding:36px;text-align:center;font-size:12px;">לא נמצאו רשומות לוג התואמות את החיפוש</div>`;
+          return;
+        }
+
+        body.innerHTML = logs.map(log => {
+          const lvl = (log.level || 'INFO').toUpperCase();
+          const timeStr = log.created_at ? new Date(log.created_at).toLocaleString('he-IL', { dateStyle: 'short', timeStyle: 'medium', hour12: false }) : (log.time || '');
+          const userLabel = log.username || (log.user_id ? `User ${log.user_id}` : 'Guest');
+
+          const detailsHtml = log.details ? `
+            <details style="margin-top:6px; width:100%;">
+              <summary style="cursor:pointer; color:#60a5fa; font-size:10px; user-select:none; font-family:var(--font-family);">הצג מטא-דאטה (JSON)</summary>
+              <pre style="margin:6px 0 0; background:rgba(0,0,0,0.6); border:1px solid #1f2937; padding:8px; border-radius:6px; font-size:10px; color:#cbd5e1; overflow-x:auto; white-space:pre-wrap;">${escapeHtml(typeof log.details === 'object' ? JSON.stringify(log.details, null, 2) : log.details)}</pre>
+            </details>
+          ` : '';
+
+          const metaMethod = (log.method && log.path) ? `<span style="font-size:10px; color:#cbd5e1; background:#1e293b; padding:1px 6px; border-radius:4px;">${escapeHtml(log.method)} ${escapeHtml(log.path)}</span>` : '';
+          const statusCodePill = log.status_code ? `<span style="font-size:10px; font-weight:800; color:${log.status_code >= 400 ? '#ef4444' : '#10b981'}; background:rgba(255,255,255,0.05); padding:1px 5px; border-radius:4px;">${log.status_code}</span>` : '';
+          const durationStr = log.duration_ms ? `<span style="font-size:10px; color:#9ca3af;">⚡ ${log.duration_ms}ms</span>` : '';
+          const ipStr = log.ip ? `<span style="font-size:10px; color:#64748b; direction:ltr;">🌐 ${escapeHtml(log.ip)}</span>` : '';
+
+          return `
+            <div style="background:#1e293b; border:1px solid #334155; border-radius:8px; padding:10px 12px; display:flex; flex-direction:column; gap:4px;">
+              <div style="display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap;">
+                <div style="display:flex; align-items:center; gap:6px;">
+                  <span style="width:20px; height:20px; border-radius:50%; background:var(--color-primary); color:#fff; font-size:10px; font-weight:800; display:flex; align-items:center; justify-content:center;">${(userLabel[0] || 'U').toUpperCase()}</span>
+                  <strong style="color:#f8fafc; font-size:12px; font-family:var(--font-family);">${escapeHtml(userLabel)}</strong>
+                  <span class="log-level ${lvl}">${lvl}</span>
+                  <span style="font-size:10px; font-weight:700; color:var(--color-primary); background:rgba(14,165,233,0.12); padding:1px 6px; border-radius:4px;">${escapeHtml(log.action || 'event')}</span>
+                </div>
+                <div style="display:flex; align-items:center; gap:8px; font-size:10px; color:#94a3b8;">
+                  ${ipStr}
+                  ${timeStr}
+                </div>
+              </div>
+
+              <div style="display:flex; align-items:center; gap:8px; margin-top:2px;">
+                ${metaMethod}
+                ${statusCodePill}
+                ${durationStr}
+              </div>
+
+              <div style="color:#e2e8f0; font-size:12px; margin-top:4px; line-height:1.4;">
+                ${escapeHtml(log.message || '')}
+              </div>
+              ${detailsHtml}
+            </div>
+          `;
+        }).join('');
+      } catch (err) {
+        console.error('Error loading global logs:', err);
+        body.innerHTML = `<div style="color:#ef4444;padding:36px;text-align:center;font-size:12px;">שגיאה בטעינת יומן פעילות מהשרת: ${escapeHtml(err.message)}</div>`;
+      }
+    }
+
+    function filterGlobalLogsLevel(level, btn) {
+      currentGlobalLogLevel = level;
+      const parent = btn.parentElement;
+      if (parent) {
+        parent.querySelectorAll('.log-filter-btn').forEach(b => b.className = 'log-filter-btn');
+      }
+      const classMap = { ALL: 'active-all', INFO: 'active-info', WARN: 'active-warn', ERROR: 'active-error' };
+      btn.classList.add(classMap[level] || 'active-all');
+      loadGlobalLogs();
+    }
+
+    function debounceFilterGlobalLogs() {
+      clearTimeout(globalLogsSearchTimeout);
+      globalLogsSearchTimeout = setTimeout(() => {
+        loadGlobalLogs();
+      }, 300);
+    }
+
+    async function clearAllSystemLogs() {
+      if (!confirm('האם אתה בטוח שברצונך לנקות את כל יומן הפעילות מהמסד? פעולה זו אינה הפיכה.')) {
+        return;
+      }
+      try {
+        const res = await fetch('/api/admin/logs', { method: 'DELETE' });
+        const data = await res.json();
+        if (data.success) {
+          showToast('יומן הפעילות נוקה בהצלחה!');
+          loadGlobalLogs();
+        } else {
+          showToast('שגיאה בניקוי הלוגים');
+        }
+      } catch (err) {
+        showToast('שגיאה בניקוי לוגים: ' + err.message);
+      }
     }
 
     // ============================================================
@@ -3154,6 +3344,8 @@
       if (userSearchInput) userSearchInput.value = '';
       const postSearchInput = document.getElementById('post-search');
       if (postSearchInput) postSearchInput.value = '';
+      const logSearchInput = document.getElementById('global-log-search');
+      if (logSearchInput) logSearchInput.value = '';
 
       try {
         const meRes = await fetch('/api/auth/me');
@@ -3203,6 +3395,7 @@
       renderStats();
       renderUsersList(usersDb);
       renderPostsList(postsDb);
+      populateGlobalLogsUserDropdown();
 
       // Fetch live models for text and image
       await fetchTextModels();
@@ -3216,6 +3409,8 @@
       if (u) u.value = '';
       const p = document.getElementById('post-search');
       if (p) p.value = '';
+      const l = document.getElementById('global-log-search');
+      if (l) l.value = '';
     });
 
   </script>

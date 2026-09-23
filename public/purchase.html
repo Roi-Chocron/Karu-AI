@@ -1528,9 +1528,9 @@
 
       try {
         const res = await fetch('/api/polar/portal');
-        const data = await res.json();
-        if (res.ok && data.portalUrl) {
-          window.open(data.portalUrl, '_blank');
+        const portalUrl = data.url || data.portalUrl;
+        if (res.ok && portalUrl) {
+          window.open(portalUrl, '_blank');
         } else {
           showModalPopup("Billing Portal", data.error || "Could not open billing portal. Please contact support.");
         }
@@ -1627,65 +1627,23 @@
       }
 
       try {
-        const res = await fetch('/api/users/subscription', {
         const res = await fetch('/api/polar/create-checkout', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ subscription: planKey })
           body: JSON.stringify({ plan: planKey })
         });
 
-        if (res.ok) {
-          const data = await res.json();
-          if (data.user) {
-            localStorage.setItem('currentUser', JSON.stringify(data.user));
         const data = await res.json();
 
-        if (res.ok && data.checkoutUrl) {
-          if (data.mode === 'simulation') {
-            // Development / test simulation mode when keys are not configured yet
-            const subRes = await fetch('/api/users/subscription', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ subscription: planKey })
-            });
-            if (subRes.ok) {
-              const subData = await subRes.json();
-              if (subData.user) {
-                localStorage.setItem('currentUser', JSON.stringify(subData.user));
-                togglePortalButton(subData.user);
-              }
-            }
-            updatePlansUI(planKey);
-            showModalPopup(
-              "Simulation Mode Activated",
-              `Running in local testing mode (${data.warning || 'Polar keys pending in .env'}). Your account has been upgraded to ${planName}!`
-            );
-          } else {
-            let user = JSON.parse(localStorage.getItem('currentUser') || '{}');
-            user.subscription = planKey;
-            localStorage.setItem('currentUser', JSON.stringify(user));
-            // Redirect to Polar secure hosted checkout
-            window.location.href = data.checkoutUrl;
-            return;
-          }
+        if (res.ok && (data.url || data.checkoutUrl)) {
+          const checkoutUrl = data.url || data.checkoutUrl;
+          window.location.href = checkoutUrl;
+          return;
         } else {
-          // Fallback to updating local session
-          let user = JSON.parse(localStorage.getItem('currentUser') || '{}');
-          user.subscription = planKey;
-          localStorage.setItem('currentUser', JSON.stringify(user));
           showModalPopup("Checkout Error", data.error || "Unable to start checkout. Please try again.");
         }
-
-        updatePlansUI(planKey);
-        showModalPopup("Subscription Updated", `Congratulations! You have selected the ${planName}. Your subscription has been updated successfully.`);
       } catch (err) {
         console.error('Purchase error:', err);
-        let user = JSON.parse(localStorage.getItem('currentUser') || '{}');
-        user.subscription = planKey;
-        localStorage.setItem('currentUser', JSON.stringify(user));
-        updatePlansUI(planKey);
-        showModalPopup("Subscription Updated", `Congratulations! You have selected the ${planName}. Your subscription has been updated successfully.`);
         showModalPopup("Checkout Error", "Network error while connecting to payment provider. Please try again.");
       } finally {
         if (btn) {

@@ -21,6 +21,7 @@ node_modules/
 .env
 .env.local
 .env.production
+.dev.vars
 
 # macOS
 .DS_Store
@@ -32,4 +33,4 @@ node_modules/
 *.swo
 
 # Personal Files
-"personal task list for the app.md"
+personal task list for the app.md

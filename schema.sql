@@ -77,8 +77,7 @@ CREATE TABLE IF NOT EXISTS user_logs (
     user_agent TEXT,
     duration_ms INTEGER,
     details TEXT,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE SET NULL
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE INDEX IF NOT EXISTS idx_user_logs_user_id ON user_logs(user_id);

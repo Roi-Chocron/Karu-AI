@@ -182,7 +182,7 @@ usersApp.get('/api/auth/me', authenticateToken, async (c) => {
 
   try {
     const dbUser = await db.prepare(`
-      SELECT id, username, email, subscription, posts_left, instagram_connected, preferred_time, phone, bio, role 
+      SELECT id, username, email, subscription, posts_left, instagram_connected, preferred_time, phone, bio, role, polar_customer_id, polar_subscription_id, polar_product_id 
       FROM users WHERE id = ?
     `).bind(user.id).first();
 

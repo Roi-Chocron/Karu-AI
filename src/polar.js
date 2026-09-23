@@ -77,9 +77,14 @@ polarApp.post('/api/polar/create-checkout', authenticateToken, async (c) => {
 
   try {
     const payload = {
+      products: [productId],
       product_id: productId,
       customer_email: user.email,
       customer_metadata: {
+        user_id: user.id,
+        plan: normalizedPlan
+      },
+      metadata: {
         user_id: user.id,
         plan: normalizedPlan
       },
@@ -87,7 +92,7 @@ polarApp.post('/api/polar/create-checkout', authenticateToken, async (c) => {
       return_url: returnUrl
     };
 
-    const res = await fetch(`${config.apiBase}/checkouts/custom/`, {
+    let res = await fetch(`${config.apiBase}/checkouts/custom/`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${config.accessToken}`,
@@ -96,8 +101,21 @@ polarApp.post('/api/polar/create-checkout', authenticateToken, async (c) => {
       body: JSON.stringify(payload)
     });
 
+    // Fallback to /checkouts/ if custom checkouts is not supported by endpoint
+    if (res.status === 404 || res.status === 405) {
+      res = await fetch(`${config.apiBase}/checkouts/`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${config.accessToken}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(payload)
+      });
+    }
+
     const data = await res.json();
-    if (!res.ok || !data.url) {
+    const checkoutUrl = data.url || data.checkout_url;
+    if (!res.ok || !checkoutUrl) {
       console.error('Polar create checkout failed:', data);
       await recordUserLog(c, {
         userId: user.id,
@@ -120,7 +138,8 @@ polarApp.post('/api/polar/create-checkout', authenticateToken, async (c) => {
 
     return c.json({
       success: true,
-      url: data.url,
+      url: checkoutUrl,
+      checkoutUrl: checkoutUrl,
       id: data.id
     });
   } catch (err) {
@@ -145,7 +164,8 @@ polarApp.get('/api/polar/portal', authenticateToken, async (c) => {
       return c.json({ error: 'No active subscription or customer record found for this user.' }, 404);
     }
 
-    const res = await fetch(`${config.apiBase}/customer-portal/sessions/`, {
+    // Polar API v1 endpoint is /customer-sessions/
+    let res = await fetch(`${config.apiBase}/customer-sessions/`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${config.accessToken}`,
@@ -156,12 +176,26 @@ polarApp.get('/api/polar/portal', authenticateToken, async (c) => {
       })
     });
 
+    if (res.status === 404) {
+      res = await fetch(`${config.apiBase}/customer-portal/sessions/`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${config.accessToken}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          customer_id: dbUser.polar_customer_id
+        })
+      });
+    }
+
     const data = await res.json();
-    if (!res.ok || !data.url) {
+    const portalUrl = data.customer_portal_url || data.url || data.portal_url;
+    if (!res.ok || !portalUrl) {
       return c.json({ error: data.detail || 'Failed to create customer portal session' }, res.status || 500);
     }
 
-    return c.json({ success: true, url: data.url });
+    return c.json({ success: true, url: portalUrl, portalUrl: portalUrl });
   } catch (err) {
     return c.json({ error: err.message }, 500);
   }
@@ -197,65 +231,63 @@ polarApp.post('/api/polar/webhook', async (c) => {
 
     console.log(`[Polar Webhook] Processing event: ${eventType} (ID: ${eventId})`);
 
-    // Handle Order Created
-    if (eventType === 'order.created') {
-      const customerEmail = (eventData.customer && eventData.customer.email) || eventData.customer_email;
-      const customerId = eventData.customer_id || (eventData.customer && eventData.customer.id);
-      const productId = eventData.product_id;
-      const plan = getPlanForProductId(productId, config) || (eventData.metadata && eventData.metadata.plan) || 'basic';
-      const quota = (PLAN_CONFIG[plan] && PLAN_CONFIG[plan].posts) || 30;
+    const customerEmail = (eventData.customer && eventData.customer.email) || eventData.customer_email || null;
+    const customerId = eventData.customer_id || (eventData.customer && eventData.customer.id) || null;
+    const userId = (eventData.metadata && eventData.metadata.user_id) || 
+                   (eventData.customer_metadata && eventData.customer_metadata.user_id) ||
+                   (eventData.customer && eventData.customer.metadata && eventData.customer.metadata.user_id) || null;
+    const productId = eventData.product_id || (eventData.product && eventData.product.id) || null;
+    const plan = getPlanForProductId(productId, config) || (eventData.metadata && eventData.metadata.plan) || 'basic';
+    const quota = (PLAN_CONFIG[plan] && PLAN_CONFIG[plan].posts) || 30;
 
-      if (customerEmail) {
+    // Handle Order Created or Paid
+    if (eventType === 'order.created' || eventType === 'order.paid') {
+      if (userId || customerEmail) {
         await db.prepare(`
           UPDATE users
           SET subscription = ?,
               posts_left = posts_left + ?,
               polar_customer_id = COALESCE(polar_customer_id, ?),
               polar_product_id = ?
-          WHERE LOWER(TRIM(email)) = LOWER(TRIM(?))
-        `).bind(plan, quota, customerId, productId, customerEmail).run();
-        console.log(`[Polar Webhook] Order applied for ${customerEmail}: plan=${plan}, added ${quota} posts`);
+          WHERE (id = ? AND ? IS NOT NULL) OR (LOWER(TRIM(email)) = LOWER(TRIM(?)) AND ? IS NOT NULL)
+        `).bind(plan, quota, customerId, productId, userId, userId, customerEmail, customerEmail).run();
+        console.log(`[Polar Webhook] Order applied: user=${userId || customerEmail}, plan=${plan}, added ${quota} posts`);
 
         await recordUserLog(c, {
-          username: customerEmail,
+          username: customerEmail || userId,
           action: 'payment_order_applied',
           level: 'INFO',
-          message: `Payment received from ${customerEmail}: Plan "${plan}", added ${quota} posts`,
+          message: `Payment received for ${customerEmail || userId}: Plan "${plan}", added ${quota} posts`,
           statusCode: 200,
-          details: { customerEmail, plan, quota, productId }
+          details: { userId, customerEmail, plan, quota, productId }
         });
       }
     }
 
-    // Handle Subscription Created or Updated
-    if (eventType === 'subscription.created' || eventType === 'subscription.updated') {
-      const customerEmail = (eventData.customer && eventData.customer.email) || eventData.customer_email;
-      const customerId = eventData.customer_id || (eventData.customer && eventData.customer.id);
+    // Handle Subscription Created, Updated or Active
+    if (eventType === 'subscription.created' || eventType === 'subscription.updated' || eventType === 'subscription.active') {
       const subscriptionId = eventData.id;
-      const productId = eventData.product_id;
       const status = eventData.status;
-      const plan = getPlanForProductId(productId, config) || (eventData.metadata && eventData.metadata.plan) || 'basic';
-      const quota = (PLAN_CONFIG[plan] && PLAN_CONFIG[plan].posts) || 30;
 
-      if (customerEmail && status === 'active') {
+      if ((userId || customerEmail) && (status === 'active' || !status)) {
         await db.prepare(`
           UPDATE users
           SET subscription = ?,
               posts_left = CASE WHEN posts_left < ? THEN ? ELSE posts_left END,
-              polar_customer_id = ?,
+              polar_customer_id = COALESCE(?, polar_customer_id),
               polar_subscription_id = ?,
               polar_product_id = ?
-          WHERE LOWER(TRIM(email)) = LOWER(TRIM(?))
-        `).bind(plan, quota, quota, customerId, subscriptionId, productId, customerEmail).run();
-        console.log(`[Polar Webhook] Subscription updated for ${customerEmail}: plan=${plan}`);
+          WHERE (id = ? AND ? IS NOT NULL) OR (LOWER(TRIM(email)) = LOWER(TRIM(?)) AND ? IS NOT NULL)
+        `).bind(plan, quota, quota, customerId, subscriptionId, productId, userId, userId, customerEmail, customerEmail).run();
+        console.log(`[Polar Webhook] Subscription updated for ${userId || customerEmail}: plan=${plan}`);
 
         await recordUserLog(c, {
-          username: customerEmail,
+          username: customerEmail || userId,
           action: 'payment_subscription_updated',
           level: 'INFO',
-          message: `Subscription updated for ${customerEmail}: plan=${plan} (Status: ${status})`,
+          message: `Subscription active for ${customerEmail || userId}: plan=${plan} (Status: ${status || 'active'})`,
           statusCode: 200,
-          details: { customerEmail, plan, quota, subscriptionId, status }
+          details: { userId, customerEmail, plan, quota, subscriptionId, status }
         });
       }
     }
