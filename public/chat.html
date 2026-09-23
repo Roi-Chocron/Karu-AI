@@ -1,0 +1,2712 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <script src="/auth_helper.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Karu AI - Chat & Create</title>
+  <style>
+
+    @import url('https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;700;800;900&family=Outfit:wght@300;400;500;700;800;900&family=Playpen+Sans:wght@300;400;700&display=swap');
+
+    /* Load Rubik font */
+    @font-face {
+      font-family: 'Rubik';
+      src: url('Rubik.ttf') format('truetype');
+      font-weight: 300 900;
+      font-display: swap;
+    }
+
+    :root {
+      --color-primary: #ef4444; /* Bold Crimson Accent */
+      --color-primary-hover: #dc2626;
+      --color-primary-glow: rgba(239, 68, 68, 0.15);
+      --color-bg: #f3f4f6; /* Clean light gray canvas */
+      --color-card-bg: #ffffff; /* Crisp white card */
+      --color-card-border: #e5e7eb; /* Subtle light gray border */
+      --color-text-main: #111827; /* Near black high contrast */
+      --color-text-muted: #6b7280; /* Gray 500 */
+      --color-input-bg: #ffffff;
+      --color-input-border: #e5e7eb;
+      --color-danger: #ef4444;
+      --brand-ruby: #ef4444;
+      --font-family: 'Inter', 'Rubik', system-ui, -apple-system, sans-serif;
+    }
+
+    /* Basic reset */
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body, html {
+      height: 100%;
+      width: 100%;
+      overflow: hidden;
+      font-family: var(--font-family);
+      background-color: #e5e7eb;
+      background-image: 
+        linear-gradient(45deg, #d1d5db 25%, transparent 25%), 
+        linear-gradient(-45deg, #d1d5db 25%, transparent 25%), 
+        linear-gradient(45deg, transparent 75%, #d1d5db 75%), 
+        linear-gradient(-45deg, transparent 75%, #d1d5db 75%);
+      background-size: 20px 20px;
+      background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+      color: var(--color-text-main);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    /* Premium mobile frame */
+    /* Premium mobile frame (Palette 18) */
+    .mobile-frame {
+      width: 100%;
+      max-width: 440px;
+      height: 100%;
+      background: #f9fafb;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      border: 1px solid #d1d5db;
+      box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.15);
+      z-index: 10;
+      color: #111827;
+      padding-top: env(safe-area-inset-top, 24px);
+    }
+
+    /* Backgrounds and spotlights */
+    .mesh-grid {
+      position: absolute;
+      inset: 0;
+      background-size: 40px 40px;
+      background-image: 
+        linear-gradient(to right, rgba(52, 224, 161, 0.012) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(52, 224, 161, 0.012) 1px, transparent 1px);
+      z-index: 1;
+      pointer-events: none;
+    }
+
+    .spotlight {
+      position: absolute;
+      width: 300px;
+      height: 300px;
+      background: radial-gradient(
+        circle, 
+        rgba(52, 224, 161, 0.05) 0%, 
+        rgba(52, 224, 161, 0.01) 50%, 
+        rgba(0, 0, 0, 0) 70%
+      );
+      filter: blur(40px);
+      z-index: 2;
+      pointer-events: none;
+    }
+
+    .spotlight-1 { top: -100px; right: -100px; }
+    .spotlight-2 { bottom: -100px; left: -100px; }
+
+    /* Main page container (SPA) */
+    .page-container {
+      position: relative;
+      z-index: 10;
+      width: 100%;
+      height: 100%;
+      display: none;
+      flex-direction: column;
+      animation: fadeIn 0.3s ease forwards;
+    }
+
+    .page-container.active {
+      display: flex;
+    }
+
+    .page-container:not(.active) {
+      display: none !important;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: scale(0.99); }
+      to { opacity: 1; transform: scale(1); }
+    }
+
+    /* ==========================================================================
+       Sign In & Auth pages
+       ========================================================================== */
+    .auth-page {
+      justify-content: center;
+      align-items: center;
+      padding: 1rem;
+      height: 100%;
+      overflow: hidden; /* Prevent page scroll since we use viewport fit */
+      display: flex;
+    }
+
+    .card-wrapper {
+      width: 100%;
+      background: var(--color-card-bg);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid var(--color-card-border);
+      border-radius: 24px;
+      padding: 1.25rem 1.25rem;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      max-height: 90%;
+      overflow-y: auto;
+      scrollbar-width: none;
+    }
+    .card-wrapper::-webkit-scrollbar {
+      display: none;
+    }
+
+    .brand-logo {
+      width: 160px;
+      height: auto;
+      margin-bottom: 0.75rem;
+      filter: drop-shadow(0 0 8px rgba(52, 224, 161, 0.2));
+    }
+
+    .logo-container-floating {
+      width: 100%;
+      display: flex;
+      justify-content: center;
+      padding-top: 0.75rem;
+      padding-bottom: 0.25rem;
+      flex-shrink: 0;
+      z-index: 100;
+    }
+
+    .logo-floating {
+      height: 120px;
+      width: auto;
+      filter: drop-shadow(0 0 8px rgba(52, 224, 161, 0.25));
+    }
+
+    .title {
+      font-size: 1.3rem;
+      font-weight: 700;
+      margin-bottom: 1rem;
+      text-align: center;
+      background: linear-gradient(135deg, #FFFFFF 0%, #E0E0E0 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .form-container {
+      width: 100%;
+      display: none;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .form-container.active {
+      display: flex;
+    }
+
+    .input-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.3rem;
+      width: 100%;
+      position: relative;
+    }
+
+    .input-group label {
+      font-size: 0.75rem;
+      font-weight: 500;
+      color: var(--color-text-muted);
+      margin-inline-start: 0.25rem;
+    }
+
+    .input-wrapper-pass {
+      position: relative;
+      width: 100%;
+    }
+
+    .input-field {
+      width: 100%;
+      padding: 0.75rem 1rem;
+      background: var(--color-input-bg);
+      border: 1px solid var(--color-input-border);
+      border-radius: 12px;
+      color: var(--color-text-main);
+      font-family: var(--font-family);
+      font-size: 0.85rem;
+      outline: none;
+      transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    }
+
+    .input-field:focus {
+      border-color: var(--color-primary);
+      background: rgba(255, 255, 255, 0.06);
+      box-shadow: 0 0 0 4px var(--color-primary-glow);
+    }
+
+    /* Password visibility eye styling */
+    .btn-eye-toggle {
+      position: absolute;
+      left: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      color: var(--color-text-muted);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 4px;
+      transition: color 0.2s ease, transform 0.1s ease;
+    }
+    .btn-eye-toggle:hover {
+      color: var(--color-primary);
+    }
+    .btn-eye-toggle:active {
+      transform: translateY(-50%) scale(0.9);
+    }
+
+    /* Validation helpers */
+    .validation-msg {
+      font-size: 0.7rem;
+      color: var(--color-danger);
+      margin-top: 0.2rem;
+      margin-inline-start: 0.25rem;
+      display: none;
+    }
+
+    .pw-requirements {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+      margin-top: 0.4rem;
+      padding: 0.5rem 0.75rem;
+      background: rgba(255, 255, 255, 0.02);
+      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.04);
+    }
+
+    .requirement-item {
+      font-size: 0.7rem;
+      color: var(--color-text-muted);
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      transition: color 0.2s ease;
+    }
+
+    .requirement-item.valid {
+      color: var(--color-primary);
+    }
+
+    .requirement-item svg {
+      width: 10px;
+      height: 10px;
+      stroke: currentColor;
+      stroke-width: 3;
+      fill: none;
+      transition: transform 0.2s ease;
+    }
+
+    .requirement-item.valid svg {
+      transform: scale(1.2);
+    }
+
+    .options-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 100%;
+      font-size: 0.75rem;
+      gap: 0.5rem;
+    }
+
+    .checkbox-container {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      cursor: pointer;
+      color: var(--color-text-muted);
+      user-select: none;
+      transition: color 0.2s ease;
+    }
+    .checkbox-container:hover {
+      color: var(--color-text-main);
+    }
+
+    .checkbox-container input {
+      display: none;
+    }
+
+    .checkmark {
+      width: 18px;
+      height: 18px;
+      border: 1.5px solid var(--color-input-border);
+      border-radius: 4px;
+      position: relative;
+      transition: all 0.2s ease;
+      display: inline-block;
+      flex-shrink: 0;
+    }
+
+    .checkbox-container input:checked + .checkmark {
+      background: var(--color-primary);
+      border-color: var(--color-primary);
+    }
+
+    .checkbox-container input:checked + .checkmark::after {
+      content: '';
+      position: absolute;
+      left: 6px;
+      top: 2px;
+      width: 4px;
+      height: 8px;
+      border: solid #fff;
+      border-width: 0 2px 2px 0;
+      transform: rotate(45deg);
+    }
+
+    .btn-submit {
+      width: 100%;
+      padding: 0.8rem;
+      background: var(--color-primary);
+      color: #000000;
+      border: none;
+      border-radius: 12px;
+      font-family: var(--font-family);
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      box-shadow: 0 4px 15px rgba(52, 224, 161, 0.2);
+      transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1);
+      text-align: center;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+    }
+
+    .btn-submit:hover {
+      transform: translateY(-1.5px);
+      box-shadow: 0 6px 20px rgba(52, 224, 161, 0.35);
+      background: #4ef0b1;
+    }
+
+    .btn-submit:active {
+      transform: translateY(0) scale(0.98);
+      box-shadow: 0 2px 10px rgba(52, 224, 161, 0.15);
+    }
+
+    .divider {
+      display: flex;
+      align-items: center;
+      text-align: center;
+      color: var(--color-text-muted);
+      font-size: 0.7rem;
+      margin: 0.35rem 0;
+      width: 100%;
+    }
+
+    .divider::before, .divider::after {
+      content: '';
+      flex: 1;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .divider:not(:empty)::before { margin-inline-end: 0.5rem; }
+    .divider:not(:empty)::after { margin-inline-start: 0.5rem; }
+
+    .btn-google {
+      width: 100%;
+      padding: 0.75rem;
+      background: transparent;
+      color: var(--color-text-main);
+      border: 1px solid var(--color-input-border);
+      border-radius: 12px;
+      font-family: var(--font-family);
+      font-size: 0.85rem;
+      font-weight: 500;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.6rem;
+      transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1);
+    }
+
+    .btn-google:hover {
+      background: rgba(255, 255, 255, 0.04);
+      border-color: rgba(255, 255, 255, 0.2);
+    }
+
+    .btn-google:active {
+      transform: scale(0.98);
+      background: rgba(255, 255, 255, 0.06);
+    }
+
+    .switch-page-text {
+      font-size: 0.75rem;
+      color: var(--color-text-muted);
+      text-align: center;
+      margin-top: 0.5rem;
+    }
+
+    .switch-page-btn {
+      background: none;
+      border: none;
+      color: var(--color-primary);
+      font-family: var(--font-family);
+      font-size: 0.75rem;
+      font-weight: 600;
+      cursor: pointer;
+      margin-inline-start: 0.25rem;
+      transition: color 0.2s ease;
+    }
+
+    .switch-page-btn:hover {
+      text-decoration: underline;
+      color: #4ef0b1;
+    }
+
+    /* ==========================================================================
+       Home / Navigation bar
+       ========================================================================== */
+    .home-view-container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      width: 100%;
+    }
+
+    .mobile-content {
+      flex: 1;
+      overflow-y: auto;
+      min-height: 0;
+      padding-bottom: calc(75px + env(safe-area-inset-bottom, 0px));
+      scrollbar-width: none;
+    }
+
+    .mobile-content::-webkit-scrollbar {
+      display: none;
+    }
+
+    .sub-screen {
+      display: none;
+      flex-direction: column;
+      width: 100%;
+      padding: 0.5rem 1rem 1.25rem 1rem;
+      animation: fadeIn 0.25s ease;
+    }
+
+    .sub-screen.active {
+      display: flex;
+    }
+
+    /* Feed Posts */
+    .feed-section {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    .post-card {
+      background: var(--color-card-bg);
+      border: 1px solid var(--color-card-border);
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+      display: flex;
+      flex-direction: column;
+      width: auto;
+    }
+
+    .post-header {
+      padding: 0.85rem 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    }
+
+    .author-avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: linear-gradient(45deg, #f9ce34, #ee2a7b, #6228d7);
+      padding: 1.5px;
+    }
+
+    .avatar-inner {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      background: #000;
+      background: #ef4444;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--color-primary);
+      color: #ffffff;
+    }
+
+    .author-info {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .author-name { font-size: 0.8rem; font-weight: 600; }
+    .post-time { font-size: 0.65rem; color: var(--color-text-muted); }
+    .author-name { font-size: 0.85rem; font-weight: 700; color: #ffffff; }
+    .post-time { font-size: 0.65rem; color: #9ca3af; }
+
+    /* Carousel Outer Non-Scrolling Wrapper */
+    /* Carousel Outer Non-Scrolling Wrapper (Palette 18: #1f2937) */
+    .carousel-wrapper {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 1 / 1;
+      background: #08080C;
+      background: #1f2937;
+      overflow: hidden;
+      direction: ltr !important;
+    }
+
+    /* Carousel - Perfect 1:1 square media frame */
+    .carousel-section {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      overflow-x: auto;
+      overflow-y: hidden;
+      scroll-snap-type: x mandatory;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+      scroll-behavior: smooth;
+      -webkit-overflow-scrolling: touch;
+      flex-shrink: 0;
+      direction: ltr !important;
+    }
+    .carousel-section::-webkit-scrollbar {
+      display: none;
+    }
+
+    .carousel-track {
+      display: flex;
+      height: 100%;
+      width: 100%;
+      direction: ltr !important;
+    }
+
+    .carousel-slide {
+      min-width: 100%;
+      height: 100%;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background-size: cover;
+      background-position: center;
+      user-select: none;
+      overflow: hidden;
+      scroll-snap-align: start;
+      scroll-snap-stop: always;
+    }
+
+    .slide-iframe {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 540px !important;
+      height: 540px !important;
+      border: none;
+      transform-origin: 0 0;
+    }
+
+    .slide-overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to bottom, rgba(0,0,0,0.1), rgba(0,0,0,0.85));
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      padding: 2rem 1.5rem;
+      text-align: center;
+    }
+
+    .slide-tag {
+      font-size: 0.75rem;
+      color: var(--color-primary);
+      font-weight: 700;
+      margin-bottom: 0.4rem;
+      letter-spacing: 1px;
+    }
+
+    .slide-title { font-size: 1.4rem; font-weight: 800; color: #FFF; line-height: 1.3; }
+    .slide-index {
+      position: absolute;
+      top: 0.75rem;
+      left: 0.75rem;
+      background: rgba(0, 0, 0, 0.65);
+      backdrop-filter: blur(4px);
+      padding: 0.25rem 0.5rem;
+      border-radius: 12px;
+      font-size: 0.7rem;
+      font-weight: 600;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      color: #fff;
+    }
+
+    .carousel-nav-btn {
+      display: flex !important;
+      align-items: center;
+      justify-content: center;
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.92);
+      border: 1px solid rgba(0, 0, 0, 0.08);
+      color: #111827;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+      cursor: pointer;
+      z-index: 20;
+      transition: all 0.2s ease;
+      padding: 0;
+      outline: none;
+    }
+
+    .carousel-nav-btn:hover {
+      background: #ffffff;
+      color: #ef4444;
+      transform: translateY(-50%) scale(1.08);
+    }
+    .carousel-nav-btn:active {
+      transform: translateY(-50%) scale(0.92);
+    }
+    .btn-prev { left: 10px; }
+    .btn-next { right: 10px; }
+
+    /* Carousel Pagination Dots (Palette 18) */
+    .carousel-dots {
+      position: absolute;
+      bottom: 12px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 0.4rem;
+      gap: 6px;
+      z-index: 10;
+      pointer-events: none;
+    }
+
+    .dot { width: 8px; height: 8px; border-radius: 50%; background: #d1d5db; cursor: pointer; transition: all 0.2s ease; pointer-events: auto; }
+    .dot.active { background: #ef4444 !important; width: 14px; border-radius: 4px; }
+
+    .post-content { padding: 1rem; display: flex; flex-direction: column; gap: 0.5rem; border-top: 1px solid rgba(255, 255, 255, 0.03); }
+    .post-desc { font-size: 0.85rem; line-height: 1.45; color: #E2E8F0; }
+    .post-hashtags { font-size: 0.8rem; color: var(--color-primary); font-weight: 500; word-break: break-all; line-height: 1.5; }
+    .hashtag-item { display: inline-block; margin-inline-end: 0.5rem; }
+
+    /* Bottom mobile nav bar - 3 modern buttons */
+    .bottom-nav {
+      position: absolute !important;
+      bottom: 0 !important;
+      left: 0 !important;
+      right: 0 !important;
+      width: 100% !important;
+      height: 64px !important;
+      background: #ffffff !important;
+      border: none !important;
+      border-top: 1px solid #e5e7eb !important;
+      border-radius: 0 !important;
+      z-index: 1000 !important;
+      display: flex !important;
+      justify-content: space-around !important;
+      align-items: center !important;
+      padding: 0 16px env(safe-area-inset-bottom, 0px) 16px !important;
+      box-sizing: border-box !important;
+      box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.04) !important;
+    }
+
+    .nav-item {
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      color: #111827 !important;
+      cursor: pointer !important;
+      background: transparent !important;
+      border: none !important;
+      padding: 8px !important;
+      border-radius: 8px !important;
+      width: auto !important;
+      min-width: 44px;
+      outline: none !important;
+      transition: transform 0.2s ease, color 0.2s ease !important;
+    }
+
+    .nav-item svg {
+      width: 28px !important;
+      height: 28px !important;
+      stroke-width: 2.2px !important;
+      stroke: currentColor !important;
+      flex-shrink: 0 !important;
+      transition: transform 0.2s ease, stroke 0.2s ease !important;
+    }
+
+    .nav-item:hover {
+      transform: scale(1.12) !important;
+    }
+
+    .nav-item span {
+      display: none !important;
+    }
+
+    .nav-item.active {
+      color: #ef4444 !important;
+      background: transparent !important;
+    }
+
+    .nav-item.active svg {
+      color: #ef4444 !important;
+      stroke: #ef4444 !important;
+      stroke-width: 2.5px !important;
+      transform: scale(1.08);
+    }
+
+    /* Settings (Settings Screen) */
+    .settings-group {
+      background: var(--brand-white);
+      border: 1px solid var(--color-card-border);
+      border-radius: 20px;
+      padding: 1rem;
+      margin: 1rem;
+      box-shadow: 0 8px 24px rgba(38, 47, 49, 0.03);
+      box-sizing: border-box;
+    }
+
+    .settings-group-title {
+      font-family: 'Outfit', var(--font-family);
+      font-weight: 800;
+      font-size: 1.1rem;
+      margin-bottom: 0.75rem;
+      text-align: right;
+      padding: 0 0.5rem;
+    }
+
+    .setting-item {
+      padding: 0.85rem 0.5rem;
+      border-bottom: 1px solid rgba(38, 47, 49, 0.06);
+    }
+
+    .setting-item:last-child {
+      border-bottom: 0;
+    }
+
+    .btn-settings-link {
+      font-family: var(--font-family);
+      font-size: 0.95rem;
+      color: var(--brand-slate);
+    }
+
+    .btn-upgrade-diamond {
+      background: rgba(217, 19, 82, 0.06);
+      border: 1px solid rgba(217, 19, 82, 0.15);
+      color: var(--brand-ruby);
+      font-weight: 700;
+      border-radius: 20px;
+      padding: 0.6rem 1.2rem;
+    }
+
+    .btn-upgrade-diamond:hover {
+      background: var(--brand-ruby);
+      color: var(--brand-white);
+    }
+
+    .btn-settings-danger {
+      color: #A60F3D;
+      border: 1px solid rgba(217, 19, 82, 0.2);
+      background: transparent;
+      border-radius: 20px;
+      padding: 0.6rem 1.2rem;
+      font-weight: 700;
+    }
+
+    .btn-settings-danger:hover {
+      background: rgba(217, 19, 82, 0.05);
+      border-color: var(--brand-ruby);
+    }
+
+    /* ModelStyle Style */
+    .modal-content {
+      background: var(--brand-white);
+      border-radius: 24px;
+      border: 1px solid var(--color-card-border);
+      box-shadow: 0 20px 48px rgba(0, 0, 0, 0.15);
+    }
+
+    .time-picker-selection-overlay {
+      border-top: 1.5px solid var(--brand-ruby);
+      border-bottom: 1.5px solid var(--brand-ruby);
+      background: rgba(217, 19, 82, 0.04);
+    }
+
+    .custom-alert-box {
+      background: var(--brand-white);
+      border-radius: 24px;
+      border: 1px solid var(--color-card-border);
+    }
+
+    .btn-alert {
+      border-radius: 20px;
+      padding: 0.65rem 1.5rem;
+    }
+
+    .btn-alert.confirm {
+      background: var(--brand-ruby);
+      color: var(--brand-white);
+    }
+
+    .btn-alert.cancel {
+      background: var(--brand-canvas);
+      color: var(--brand-slate);
+    }
+
+    .skeleton {
+      background: linear-gradient(90deg, #E2E4E5 25%, #F0F2F3 50%, #E2E4E5 75%);
+      background-size: 200% 100%;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+
+    /* Style Style Style of 8 Style Style Style StyleImage */
+    .auth-page .card-wrapper {
+      background: #FFFFFF !important;
+      border: 1px solid rgba(38, 47, 49, 0.08) !important;
+      border-radius: 16px !important;
+      padding: 32px 24px !important;
+      box-shadow: 0 16px 40px rgba(38, 47, 49, 0.06) !important;
+      display: flex !important;
+      flex-direction: column !important;
+      align-items: stretch !important;
+      text-align: left !important;
+      width: 100% !important;
+      box-sizing: border-box !important;
+      max-width: 380px !important;
+    }
+    
+    .auth-page .form-container {
+      display: none;
+      flex-direction: column !important;
+      gap: 16px !important;
+      width: 100% !important;
+    }
+    
+    .auth-page .form-container.active {
+      display: flex !important;
+    }
+    
+    .auth-page .input-group {
+      display: flex !important;
+      flex-direction: column !important;
+      align-items: stretch !important;
+      margin-bottom: 16px !important;
+      width: 100% !important;
+    }
+    
+    .auth-page .input-group label {
+      font-family: var(--font-family) !important;
+      font-size: 14px !important;
+      font-weight: 500 !important;
+      color: #e0809b !important;
+      margin-bottom: 8px !important;
+      text-align: left !important;
+      direction: ltr !important;
+    }
+    
+    .auth-page .input-field {
+      width: 100% !important;
+      background: transparent !important;
+      border: 0 !important;
+      border-bottom: 2px solid #e0809b !important;
+      border-radius: 0 !important;
+      color: #262F31 !important;
+      font-size: 15px !important;
+      padding: 8px 0 !important;
+      box-sizing: border-box !important;
+      transition: border-color 0.2s ease !important;
+      direction: ltr !important;
+      text-align: left !important;
+    }
+    
+    .auth-page .input-field::placeholder {
+      color: #e0809b !important;
+      opacity: 0.7 !important;
+    }
+    
+    .auth-page .input-field:focus {
+      border-bottom-color: #D91352 !important;
+      outline: none !important;
+      box-shadow: none !important;
+    }
+    
+    .auth-page .input-wrapper-pass {
+      position: relative !important;
+      width: 100% !important;
+      display: flex !important;
+      align-items: center !important;
+    }
+    
+    .auth-page .btn-eye-toggle {
+      position: absolute !important;
+      right: 0px !important;
+      left: auto !important;
+      background: transparent !important;
+      border: 0 !important;
+      color: #e0809b !important;
+      cursor: pointer !important;
+      display: flex !important;
+      align-items: center !important;
+      padding: 8px !important;
+      z-index: 10 !important;
+    }
+    
+    .auth-page .btn-submit {
+      width: auto !important;
+      min-width: 130px !important;
+      background: #D91352 !important;
+      color: #FFFFFF !important;
+      border: 0 !important;
+      border-radius: 20px !important;
+      font-size: 15px !important;
+      font-weight: 700 !important;
+      padding: 10px 24px !important;
+      cursor: pointer !important;
+      box-shadow: 0 4px 12px rgba(217, 19, 82, 0.2) !important;
+      transition: all 0.2s ease !important;
+      margin: 8px auto 0 !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      gap: 8px !important;
+    }
+    
+    .auth-page .btn-submit:hover {
+      background: #B80F43 !important;
+      box-shadow: 0 6px 16px rgba(217, 19, 82, 0.3) !important;
+    }
+    
+    .auth-page .divider-custom {
+      text-align: center !important;
+      font-size: 13px !important;
+      color: #D91352 !important;
+      margin: 8px 0 !important;
+      font-weight: 700 !important;
+    }
+    
+    .auth-page .btn-google-custom {
+      display: inline-flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      background-color: #ffffff !important;
+      border: 1px solid #747775 !important;
+      border-radius: 4px !important;
+      box-sizing: border-box !important;
+      color: #1f1f1f !important;
+      cursor: pointer !important;
+      font-family: "Roboto", "Helvetica Neue", Arial, sans-serif !important;
+      font-size: 14px !important;
+      font-weight: 500 !important;
+      height: 40px !important;
+      padding: 0 12px !important;
+      position: relative !important;
+      text-align: center !important;
+      transition: background-color 0.218s, border-color 0.218s !important;
+      width: auto !important;
+      min-width: 200px !important;
+      margin: 8px auto 0 !important;
+      gap: 12px !important;
+    }
+    
+    .auth-page .btn-google-custom:hover {
+      background-color: #f8fafd !important;
+      border-color: #8e918f !important;
+    }
+    
+    .auth-page .btn-google-custom:active {
+      background-color: #eeeeee !important;
+    }
+    
+    .auth-page .switch-page-text-custom {
+      text-align: center !important;
+      font-size: 13px !important;
+      color: #262F31 !important;
+      margin-top: 24px !important;
+      font-family: var(--font-family) !important;
+    }
+    
+    .auth-page .switch-page-btn-custom {
+      background: none !important;
+      border: none !important;
+      color: #D91352 !important;
+      font-weight: 900 !important;
+      cursor: pointer !important;
+      padding: 0 !important;
+      font-size: 13px !important;
+      margin-inline-start: 4px !important;
+    }
+    
+    .auth-page .checkbox-container {
+      display: flex !important;
+      align-items: center !important;
+      gap: 8px !important;
+      font-size: 13px !important;
+      color: #7A8487 !important;
+      cursor: pointer !important;
+      user-select: none !important;
+      margin-top: 8px !important;
+      direction: ltr !important;
+      justify-content: flex-start !important;
+      text-align: left !important;
+    }
+    
+    .auth-page .checkbox-container input {
+      width: 16px !important;
+      height: 16px !important;
+      accent-color: #D91352 !important;
+      border: 1.5px solid #e0809b !important;
+      border-radius: 4px !important;
+    }
+    
+    .auth-page .pw-requirements {
+      margin-top: 8px !important;
+      display: none !important;
+      flex-direction: column !important;
+      gap: 4px !important;
+      text-align: left !important;
+    }
+    
+    .auth-page .input-wrapper-pass:focus-within ~ .pw-requirements {
+      display: flex !important;
+    }
+    
+    .auth-page .requirement-item {
+      font-size: 11px !important;
+      color: #7A8487 !important;
+      display: flex !important;
+      align-items: center !important;
+      gap: 6px !important;
+      direction: ltr !important;
+    }
+    
+    .auth-page .requirement-item svg {
+      width: 12px !important;
+      height: 12px !important;
+      stroke: #7A8487 !important;
+    }
+    
+    .auth-page .requirement-item.valid {
+      color: #34A853 !important;
+    }
+    
+    .auth-page .requirement-item.valid svg {
+      stroke: #34A853 !important;
+    }
+    
+    .auth-page .validation-msg {
+      font-size: 11px !important;
+      color: #D91352 !important;
+      margin-top: 4px !important;
+      text-align: left !important;
+      display: none;
+      direction: ltr !important;
+    }
+
+    /* Custom premium scrollbar styles (auto-hiding, thin, scroll-only) */
+    * {
+      scrollbar-width: thin;
+      scrollbar-color: transparent transparent;
+      transition: scrollbar-color 0.3s ease;
+    }
+    *:hover {
+      scrollbar-color: rgba(38, 47, 49, 0.2) transparent;
+    }
+    ::-webkit-scrollbar {
+      width: 5px;
+      height: 5px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: transparent;
+      border-radius: 10px;
+      transition: background 0.3s ease;
+    }
+    *:hover::-webkit-scrollbar-thumb {
+      background: rgba(38, 47, 49, 0.2);
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(38, 47, 49, 0.4) !important;
+    }
+
+    .btn-download-carousel:hover, .btn-chat-link:hover, .btn-delete-carousel:hover {
+      background: rgba(38, 47, 49, 0.08) !important;
+      color: var(--brand-ruby) !important;
+    }
+    
+    @keyframes rotate {
+      100% { transform: rotate(360deg); }
+    }
+    @keyframes dash {
+      0% { stroke-dasharray: 1, 150; stroke-dashoffset: 0; }
+      50% { stroke-dasharray: 90, 150; stroke-dashoffset: -35; }
+      100% { stroke-dasharray: 90, 150; stroke-dashoffset: -124; }
+    }
+  
+
+    .scroll-helper-btn {
+      transition: all 0.2s ease;
+      background: #ffffff !important;
+      border: 1px solid #e5e7eb !important;
+      color: #111827 !important;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.08) !important;
+    }
+    .scroll-helper-btn:hover {
+      background: #f9fafb !important;
+      color: #ef4444 !important;
+      border-color: #ef4444 !important;
+      transform: scale(1.08);
+    }
+
+  </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+</head>
+<body>
+  <div class="mobile-frame">
+    <div class="mesh-grid"></div>
+    <div class="spotlight spotlight-1"></div>
+    <div class="spotlight spotlight-2"></div>
+    
+    <div id="home-page" class="page-container active">
+      
+      <!-- Notifications Dropdown Overlay (Palette 18, positioned above bottom nav) -->
+      <div id="notifications-dropdown" class="notifications-dropdown" style="display: none; position: absolute; bottom: 74px; right: 16px; width: 280px; max-width: calc(100% - 32px); background: #ffffff; border: 1px solid #e5e7eb; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.08); z-index: 1100; box-sizing: border-box; padding: 8px 0; font-family: var(--font-family);">
+        <div style="padding: 8px 16px; border-bottom: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center; box-sizing: border-box;">
+          <span style="font-weight: 700; font-size: 13px; color: #111827;">Notifications</span>
+          <button onclick="clearNotifications()" style="background: none; border: none; color: #ef4444; font-size: 11px; font-weight: 700; cursor: pointer; padding: 0;">Clear All</button>
+        </div>
+        <div id="notifications-list" style="max-height: 240px; overflow-y: auto; box-sizing: border-box;">
+          <div class="notification-item" style="padding: 10px 16px; border-bottom: 1px solid #f3f4f6; display: flex; flex-direction: column; gap: 4px; text-align: left; box-sizing: border-box;">
+            <div style="display: flex; align-items: center; gap: 6px; font-size: 11.5px; font-weight: 700; color: #ef4444;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0; margin-right:4px;"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg><span>Security Alert</span>
+            </div>
+            <div style="font-size: 11px; color: #6b7280; line-height: 1.3;">New login detected.</div>
+            <div style="font-size: 9px; color: #9ca3af;">Just now</div>
+          </div>
+          <div class="notification-item" style="padding: 10px 16px; border-bottom: 1px solid #f3f4f6; display: flex; flex-direction: column; gap: 4px; text-align: left; box-sizing: border-box;">
+            <div style="display: flex; align-items: center; gap: 6px; font-size: 11.5px; font-weight: 700; color: #ef4444;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0; margin-right:4px;"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg><span>System Update</span>
+            </div>
+            <div style="font-size: 11px; color: #6b7280; line-height: 1.3;">Minimalist Light Design is live!</div>
+            <div style="font-size: 9px; color: #9ca3af;">10 mins ago</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- User Tab Floating Mini Menu (Palette 18, positioned above bottom nav) -->
+      <div id="user-mini-menu" class="user-mini-menu" style="display: none; position: absolute; bottom: 74px; right: 16px; width: 180px; background: #ffffff; border: 1px solid #e5e7eb; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.08); z-index: 1100; box-sizing: border-box; padding: 6px 0; font-family: var(--font-family);">
+        <button onclick="location.href='profile.html'" style="width: 100%; padding: 10px 16px; background: none; border: none; font-size: 13px; font-weight: 600; color: #111827; display: flex; align-items: center; gap: 8px; cursor: pointer; text-align: left; font-family: inherit;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+          <span>Profile</span>
+        </button>
+        <button onclick="location.href='settings.html'" style="width: 100%; padding: 10px 16px; background: none; border: none; font-size: 13px; font-weight: 600; color: #111827; display: flex; align-items: center; gap: 8px; cursor: pointer; text-align: left; font-family: inherit;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+          <span>Settings</span>
+        </button>
+        <button onclick="location.href='support.html'" style="width: 100%; padding: 10px 16px; background: none; border: none; font-size: 13px; font-weight: 600; color: #111827; display: flex; align-items: center; gap: 8px; cursor: pointer; text-align: left; font-family: inherit;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+          <span>Support</span>
+        </button>
+        <button onclick="location.href='legal.html'" style="width: 100%; padding: 10px 16px; background: none; border: none; font-size: 13px; font-weight: 600; color: #111827; display: flex; align-items: center; gap: 8px; cursor: pointer; text-align: left; font-family: inherit;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+          <span>Legal Info</span>
+        </button>
+        <button id="admin-nav-btn" onclick="location.href='admin.html'" style="display: none; width: 100%; padding: 10px 16px; background: none; border: none; font-size: 13px; font-weight: 600; color: #111827; align-items: center; gap: 8px; cursor: pointer; text-align: left; font-family: inherit;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="9" y1="3" x2="9" y2="21"></line></svg>
+          <span>Admin Panel</span>
+        </button>
+        <div style="height: 1px; background: #e5e7eb; margin: 4px 0;"></div>
+        <button onclick="logout()" style="width: 100%; padding: 10px 16px; background: none; border: none; font-size: 13px; font-weight: 600; color: #ef4444; display: flex; align-items: center; gap: 8px; cursor: pointer; text-align: left; font-family: inherit;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+          <span>Logout</span>
+        </button>
+      </div>
+    
+      <div class="mobile-content chat-active" style="padding-bottom: 74px;">
+        <!-- Screen 1: Chat Threads List Screen -->
+        <div id="chat-list-screen" class="sub-screen" style="flex-direction: column; width: 100%; height: 100%; display: none;">
+          <!-- Top Header with Title and New Chat Button -->
+          <div style="display: flex; justify-content: space-between; align-items: center; padding: 18px 20px 14px 20px; border-bottom: 1px solid #f3f4f6; background: #ffffff; flex-shrink: 0;">
+            <div>
+              <h2 style="margin: 0; font-size: 20px; font-weight: 800; color: #111827; letter-spacing: -0.4px;">Chats</h2>
+              <p style="margin: 2px 0 0 0; font-size: 12px; color: #6b7280;">Your creative carousel conversations</p>
+            </div>
+            <button onclick="startNewChat()" style="background: #ef4444; color: #ffffff; border: none; border-radius: 20px; padding: 8px 16px; font-size: 12.5px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px; box-shadow: 0 4px 12px rgba(239, 68, 68, 0.28); transition: all 0.2s;" title="Create New Chat">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+              </svg>
+              <span>New Chat</span>
+            </button>
+          </div>
+
+          <!-- Chat List Container -->
+          <div id="chat-threads-list" style="flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 12px; box-sizing: border-box;">
+            <!-- Rendered dynamically -->
+          </div>
+        </div>
+
+        <!-- Screen 2: Active Chat Conversation Screen -->
+        <div id="chat-screen" class="sub-screen" style="flex-direction: column; width: 100%; height: 100%; display: flex;">
+          <!-- Conversation Header (Back to Chats, Title, New Chat) -->
+          <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background: #ffffff; border-bottom: 1px solid #f3f4f6; flex-shrink: 0; z-index: 50;">
+            <button onclick="openChatList()" style="background: none; border: none; color: #ef4444; font-size: 13px; font-weight: 700; display: flex; align-items: center; gap: 4px; cursor: pointer; padding: 4px 6px 4px 0;" title="Back to All Chats">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="15 18 9 12 15 6"></polyline>
+              </svg>
+              <span>Chats</span>
+            </button>
+            <div style="display: flex; flex-direction: column; align-items: center; max-width: 170px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+              <span id="active-chat-title" style="font-size: 13.5px; font-weight: 700; color: #111827; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">New Carousel Chat</span>
+              <span style="font-size: 10.5px; color: #6b7280;">Karu AI Generator</span>
+            </div>
+            <button id="btn-delete-header" onclick="if(currentPostId) { deleteCarousel(currentPostId); } else { showModalPopup('No Chat', 'No active carousel chat to delete.'); }" style="background: none; border: none; color: #111827; border-radius: 8px; padding: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: opacity 0.2s;" title="Delete Carousel">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#111827" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="3 6 5 6 21 6"></polyline>
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+              </svg>
+            </button>
+          </div>
+
+          <div class="chat-screen-wrapper" style="display: flex; flex-direction: column; height: 100%;">
+
+            <!-- Scrollable content containing chat messages and the carousel -->
+            <div class="chat-scroll-container" style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; box-sizing: border-box;">
+              <!-- Container for the selected post card (rendered dynamically inside the scroll view) -->
+              <div id="post-chat-card-container" style="box-sizing: border-box; flex-shrink: 0; width: 100%;"></div>
+
+              <div class="chat-box" id="chat-box" style="height: auto; overflow: visible; padding: 12px 16px 20px 16px; box-sizing: border-box; display: flex; flex-direction: column; gap: 10px;">
+              </div>
+            </div>
+
+            <!-- Image Preview Area -->
+            <div id="chat-image-preview" style="display: none; position: relative; margin: 0 16px -8px 16px; width: fit-content; border: 1px solid #374151; border-radius: 8px; overflow: hidden; background: #1f2937; z-index: 91; max-width: 100px;">
+              <img id="chat-image-preview-img" src="" style="width: 100%; height: auto; display: block;" />
+              <button onclick="clearChatImage()" style="position: absolute; top: 4px; right: 4px; background: rgba(0,0,0,0.6); color: #fff; border: none; border-radius: 50%; width: 20px; height: 20px; font-size: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center;">x</button>
+            </div>
+
+            <!-- Chat Input Area (Light Aesthetic) -->
+            <div class="chat-input-row" style="position: relative !important; bottom: auto !important; left: auto !important; right: auto !important; margin: 10px 16px 28px 16px !important; border-radius: 24px !important; width: calc(100% - 32px) !important; padding: 7px 8px 7px 14px; display: flex; gap: 8px; align-items: center; box-sizing: border-box; background: #ffffff !important; border: 1px solid #e5e7eb !important; box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08); flex-shrink: 0; z-index: 90;">
+              <button id="btn-attach-image" onclick="document.getElementById('chat-file-input').click()" style="background: none; border: none; color: #ef4444; cursor: pointer; padding: 4px; display: flex; align-items: center; justify-content: center; transition: color 0.2s;" title="Attach Image">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+              </button>
+              <input type="file" id="chat-file-input" accept="image/*" style="display: none;" onchange="handleChatImageSelect(event)">
+              <textarea id="chat-input" class="chat-textarea" placeholder="Write a message..." onkeydown="checkChatEnter(event)" oninput="autoResizeTextarea(this)" style="flex: 1; height: 38px; border: none; background: transparent; font-size: 13.5px; color: #111827 !important; font-family: var(--font-family); outline: none; resize: none; padding: 8px 0; box-sizing: border-box;"></textarea>
+              
+              <button class="btn-submit" onclick="sendChatMessage()" style="width: 36px; height: 36px; background: #ef4444; border: none; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; cursor: pointer; flex-shrink: 0; padding: 0; box-shadow: 0 4px 10px rgba(239, 68, 68, 0.3); margin: 0; transition: all 0.2s;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <line x1="22" y1="2" x2="11" y2="13"></line>
+                  <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                </svg>
+              </button>
+            </div>
+            
+            <!-- Float helper buttons inside wrapper so they remain fixed -->
+            <div class="scroll-helper-controls" style="position: absolute; bottom: 96px; right: 20px; display: none; flex-direction: column; gap: 8px; z-index: 100;">
+              <button id="btn-scroll-top" onclick="scrollToTopChat()" class="scroll-helper-btn" title="Scroll to Carousel" style="width: 38px; height: 38px; border-radius: 50%; display: none; align-items: center; justify-content: center; cursor: pointer;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="18 15 12 9 6 15"></polyline>
+                </svg>
+              </button>
+              <button id="btn-scroll-bottom" onclick="scrollToBottomChat()" class="scroll-helper-btn" title="Scroll to Chat" style="width: 38px; height: 38px; border-radius: 50%; display: none; align-items: center; justify-content: center; cursor: pointer;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="6 9 12 15 18 9"></polyline>
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bottom Navigation Bar (Persistent, Touching Bottom Edge) -->
+      <nav class="bottom-nav">
+        <!-- Home Icon -->
+        <button class="nav-item" id="btn-tab-feed" onclick="location.href='feed.html';" title="Home">
+          <svg class="icon-heavy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+            <polyline points="9 22 9 12 15 12 15 22"></polyline>
+          </svg>
+          <span class="lang-translatable">Home</span>
+        </button>
+        <!-- Chat Icon -->
+        <button class="nav-item active" id="btn-tab-chat" onclick="openChatList();" title="Chat">
+          <svg class="icon-heavy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path>
+          </svg>
+          <span class="lang-translatable">Chat</span>
+        </button>
+        <!-- Bell / Notifications Icon -->
+        <button class="nav-item" id="btn-tab-notifications" onclick="toggleNotificationsDropdown(event);" title="Notifications">
+          <svg class="icon-heavy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+            <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+          </svg>
+        </button>
+        <!-- Profile Icon -->
+        <button class="nav-item" id="btn-tab-settings" onclick="toggleUserMiniMenu(this, event)" title="Profile">
+          <svg class="icon-heavy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+            <circle cx="12" cy="7" r="4"></circle>
+          </svg>
+          <span class="lang-translatable">Profile</span>
+        </button>
+      </nav>
+    </div>
+  </div>
+  <script>
+    // Custom Modal Popup Utility (Palette 18)
+    function showModalPopup(title, message) {
+      let modal = document.getElementById('custom-alert-modal');
+      if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'custom-alert-modal';
+        modal.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;z-index:99999;font-family:var(--font-family);padding:20px;box-sizing:border-box;';
+        const content = document.createElement('div');
+        content.style.cssText = 'background:#1f2937;border:1px solid #374151;padding:24px;border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,0.5);width:340px;max-width:100%;text-align:center;';
+        const titleEl = document.createElement('h3');
+        titleEl.id = 'custom-alert-title';
+        titleEl.style.cssText = 'margin:0 0 10px 0;font-size:18px;color:#ffffff;font-weight:700;';
+        const messageEl = document.createElement('p');
+        messageEl.id = 'custom-alert-message';
+        messageEl.style.cssText = 'margin:0 0 20px 0;font-size:14px;color:#9ca3af;line-height:1.5;word-break:break-word;';
+        const btn = document.createElement('button');
+        btn.textContent = 'OK';
+        btn.style.cssText = 'background:#ef4444;color:#ffffff;border:none;padding:10px 28px;border-radius:8px;font-weight:700;cursor:pointer;font-size:14px;';
+        btn.onclick = () => { modal.style.display = 'none'; };
+        content.appendChild(titleEl);
+        content.appendChild(messageEl);
+        content.appendChild(btn);
+        modal.appendChild(content);
+        document.body.appendChild(modal);
+      }
+      document.getElementById('custom-alert-title').textContent = title;
+      document.getElementById('custom-alert-message').textContent = message;
+      modal.style.display = 'flex';
+    }
+
+    let chatHistory = [];
+    let currentPostId = null;
+    let pendingImageBase64 = null;
+
+    function handleChatImageSelect(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        pendingImageBase64 = e.target.result;
+        document.getElementById('chat-image-preview-img').src = pendingImageBase64;
+        document.getElementById('chat-image-preview').style.display = 'block';
+      };
+      reader.readAsDataURL(file);
+      event.target.value = '';
+    }
+
+    function clearChatImage() {
+      pendingImageBase64 = null;
+      document.getElementById('chat-image-preview').style.display = 'none';
+      document.getElementById('chat-image-preview-img').src = '';
+    }
+
+    function toggleNotificationsDropdown(e) {
+      if (e) e.stopPropagation();
+      const dropdown = document.getElementById('notifications-dropdown');
+      if (!dropdown) return;
+      dropdown.style.display = dropdown.style.display === 'none' || !dropdown.style.display ? 'block' : 'none';
+      const userMenu = document.getElementById('user-mini-menu');
+      if (userMenu) userMenu.style.display = 'none';
+    }
+
+    function toggleUserMiniMenu(btn, e) {
+      if (e) e.stopPropagation();
+      const menu = document.getElementById('user-mini-menu');
+      if (!menu) return;
+      const isHidden = menu.style.display === 'none' || !menu.style.display;
+      
+      const navItems = document.querySelectorAll('.nav-item');
+      navItems.forEach(item => item.classList.remove('active'));
+
+      if (isHidden) {
+        menu.style.display = 'block';
+        if (btn) btn.classList.add('active');
+        const dropdown = document.getElementById('notifications-dropdown');
+        if (dropdown) dropdown.style.display = 'none';
+      } else {
+        menu.style.display = 'none';
+        const chatBtn = document.getElementById('btn-tab-chat');
+        if (chatBtn) chatBtn.classList.add('active');
+      }
+    }
+
+    function clearNotifications() {
+      const list = document.getElementById('notifications-list');
+      if (list) {
+        list.innerHTML = '<div style="text-align: center; padding: 20px; color: #9ca3af; font-size: 11px;">No new notifications</div>';
+      }
+    }
+
+    window.addEventListener('click', (event) => {
+      const dropdown = document.getElementById('notifications-dropdown');
+      const userMenu = document.getElementById('user-mini-menu');
+      const profileBtn = document.getElementById('btn-tab-settings');
+
+      if (dropdown && dropdown.style.display === 'block') {
+        if (!event.target.closest('#btn-tab-notifications') && !event.target.closest('#notifications-dropdown')) {
+          dropdown.style.display = 'none';
+        }
+      }
+      if (userMenu && userMenu.style.display === 'block') {
+        if (!event.target.closest('#btn-tab-settings') && !event.target.closest('#user-mini-menu')) {
+          userMenu.style.display = 'none';
+          const chatBtn = document.getElementById('btn-tab-chat');
+          if (chatBtn) chatBtn.classList.add('active');
+          if (profileBtn) profileBtn.classList.remove('active');
+        }
+      }
+    });
+
+    function checkChatEnter(e) {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendChatMessage();
+      }
+    }
+
+    function autoResizeTextarea(textarea) {
+      textarea.style.height = 'auto';
+      textarea.style.height = Math.min(textarea.scrollHeight, 120) + 'px';
+    }
+
+    async function logout() {
+      try {
+        await fetch('/api/auth/logout', { method: 'POST' });
+      } catch (err) {
+        console.error('Logout error:', err);
+      }
+      localStorage.removeItem('currentUser');
+      localStorage.removeItem('authToken');
+      window.location.href = 'login.html';
+    }
+
+    function loadDemoChat() {
+      console.log('Running demo chat for offline / direct file viewing...');
+      const greetingTitle = document.querySelector('.user-greeting-title');
+      const greetingSubtitle = document.querySelector('.user-greeting-subtitle');
+      if (greetingTitle) greetingTitle.textContent = 'Roi Chocron';
+      if (greetingSubtitle) greetingSubtitle.textContent = 'Pro Plan';
+
+      const chatBox = document.getElementById('chat-box');
+      if (chatBox) {
+        chatBox.innerHTML = `
+          <div class="chat-message assistant" style="align-self: flex-start; background: #ffffff; color: #111827; padding: 12px 16px; border-radius: 14px; margin-bottom: 8px; border: 1px solid #e5e7eb; box-shadow: 0 2px 8px rgba(0,0,0,0.04); font-size: 13.5px; line-height: 1.5; max-width: 85%;">
+            Welcome to Karu AI! Tell me what carousel you want to create or ask for edits.
+          </div>
+        `;
+      }
+      
+      const demoCarousel = {
+        id: "demo-chat-p1",
+        username: "Roi Chocron",
+        title: "NEURAL INTERSECTIONS",
+        description: "Exploring generative aesthetics and creative workflows in Palette 18.",
+        hashtags: "#AI #Design #Innovation #Palette18",
+        tokens_cost: 22547,
+        date: "Today",
+        slides: [
+          {
+            background_style: "linear-gradient(135deg, #111827 0%, #1f2937 100%)",
+            html_content: `
+              <div style="padding: 40px; color: #fff; font-family: 'Inter', sans-serif; display: flex; flex-direction: column; justify-content: center; height: 100%; box-sizing: border-box;">
+                <span style="color: #ef4444; font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 12px;">Palette 18</span>
+                <h1 style="font-size: 32px; font-weight: 800; line-height: 1.15; margin: 0 0 20px 0;">NEURAL<br/><span style="color: #ef4444;">INTERSECTIONS</span></h1>
+                <p style="font-size: 15px; color: #9ca3af; margin: 0; line-height: 1.5;">Human intuition meets generative intelligence in modern UI/UX design.</p>
+              </div>
+            `
+          },
+          {
+            background_style: "linear-gradient(135deg, #1f2937 0%, #111827 100%)",
+            html_content: `
+              <div style="padding: 40px; color: #fff; font-family: 'Inter', sans-serif; display: flex; flex-direction: column; justify-content: center; height: 100%; box-sizing: border-box;">
+                <span style="color: #ef4444; font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 12px;">Key Principle</span>
+                <h2 style="font-size: 26px; font-weight: 800; margin: 0 0 16px 0;">Precision Layouts</h2>
+                <p style="font-size: 14px; color: #9ca3af; margin: 0; line-height: 1.5;">Flush full-width navigation, calibrated contrast, and seamless typography.</p>
+              </div>
+            `
+          }
+        ]
+      };
+      renderChatCarousel(demoCarousel);
+    }
+
+    async function initChat() {
+      try {
+        if (window.location.protocol === 'file:') {
+          console.warn('Running via file:// protocol. Initializing local demo chat.');
+          loadDemoChat();
+          return;
+        }
+
+        const authRes = await fetch('/api/auth/me');
+        if (!authRes.ok) {
+          if (authRes.status === 401) {
+            window.location.href = 'login.html';
+            return;
+          }
+          loadDemoChat();
+          return;
+        }
+        const user = await authRes.json();
+        localStorage.setItem('currentUser', JSON.stringify(user));
+
+        if (user.role === 'admin') {
+          const adminBtn = document.getElementById('admin-nav-btn');
+          if (adminBtn) adminBtn.style.display = 'flex';
+        }
+
+        // Update header greeting details
+        const greetingTitle = document.querySelector('.user-greeting-title');
+        const greetingSubtitle = document.querySelector('.user-greeting-subtitle');
+        if (greetingTitle) {
+          greetingTitle.textContent = user.username || 'Karu Creator';
+        }
+        if (greetingSubtitle) {
+          const planMap = { free: 'Free Plan', basic: 'Basic Plan', pro: 'Pro Plan', agency: 'Agency Plan' };
+          greetingSubtitle.textContent = planMap[user.subscription] || 'Chat & Create';
+        }
+
+        // Fetch user posts to check available chats
+        let myPosts = [];
+        try {
+          const postsRes = await fetch('/api/posts/my');
+          if (postsRes.ok) {
+            myPosts = await postsRes.json();
+          }
+        } catch (e) {
+          console.warn('Error fetching chats:', e);
+        }
+
+        // Check for postId in URL params
+        const urlParams = new URLSearchParams(window.location.search);
+        const postId = urlParams.get('postId');
+
+        if (postId) {
+          openChatConversation(postId, myPosts);
+        } else if (myPosts && myPosts.length > 0) {
+          // If no postId provided and user has existing chats, show the chat list!
+          openChatList(myPosts);
+        } else {
+          // If no existing posts, start a clean new chat session
+          startNewChat(false);
+        }
+
+        // Check for prefilled prompt
+        const prefilledPrompt = localStorage.getItem('prefilledPrompt');
+        if (prefilledPrompt) {
+          const input = document.getElementById('chat-input');
+          if (input) {
+            input.value = prefilledPrompt;
+            autoResizeTextarea(input);
+            input.focus();
+          }
+          localStorage.removeItem('prefilledPrompt');
+        }
+      } catch (err) {
+        console.error('Chat init error:', err);
+        loadDemoChat();
+      }
+    }
+
+    let userCachedPosts = [];
+
+    async function openChatList(cachedPosts = null) {
+      const listScreen = document.getElementById('chat-list-screen');
+      const chatScreen = document.getElementById('chat-screen');
+      if (listScreen) listScreen.style.display = 'flex';
+      if (chatScreen) chatScreen.style.display = 'none';
+
+      // Update URL without reloading
+      const url = new URL(window.location);
+      url.searchParams.delete('postId');
+      window.history.replaceState({}, '', url);
+
+      if (cachedPosts) {
+        userCachedPosts = cachedPosts;
+        renderChatThreads(userCachedPosts);
+      } else {
+        try {
+          const res = await fetch('/api/posts/my');
+          if (res.ok) {
+            userCachedPosts = await res.json();
+            renderChatThreads(userCachedPosts);
+          } else {
+            renderChatThreads([]);
+          }
+        } catch (err) {
+          renderChatThreads([]);
+        }
+      }
+    }
+
+    function renderChatThreads(posts) {
+      const container = document.getElementById('chat-threads-list');
+      if (!container) return;
+
+      if (!posts || posts.length === 0) {
+        container.innerHTML = `
+          <div style="margin: 40px 16px; padding: 36px 20px; background: #ffffff; border: 1px dashed #e5e7eb; border-radius: 16px; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 12px; box-shadow: 0 4px 16px rgba(0,0,0,0.03);">
+            <div style="width: 52px; height: 52px; border-radius: 50%; background: rgba(239, 68, 68, 0.1); display: flex; align-items: center; justify-content: center; color: #ef4444;">
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path>
+              </svg>
+            </div>
+            <div style="font-size: 16px; font-weight: 800; color: #111827; direction: rtl;">עוד לא יצרת שום פוסט - צור עכשיו</div>
+            <button onclick="startNewChat()" style="margin-top: 8px; background: #ef4444; color: #ffffff; border: none; border-radius: 20px; padding: 10px 22px; font-size: 13.5px; font-weight: 700; cursor: pointer; box-shadow: 0 4px 14px rgba(239,68,68,0.35);">+ צור עכשיו</button>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = posts.map(post => {
+        const slideCount = (post.slides || []).length;
+        const displayTitle = post.title || post.description?.slice(0, 45) || 'Carousel Conversation';
+        const displayDate = post.date || (post.created_at ? new Date(post.created_at).toLocaleDateString('en-US') : 'Recent');
+
+        return `
+          <div onclick="openChatConversation('${post.id}')" style="background: #ffffff; border: 1px solid #f3f4f6; border-radius: 14px; padding: 14px 16px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; transition: all 0.2s; box-shadow: 0 2px 8px rgba(0,0,0,0.03);" onmouseover="this.style.borderColor='#ef4444'; this.style.transform='translateY(-1px)';" onmouseout="this.style.borderColor='#f3f4f6'; this.style.transform='none';">
+            <div style="display: flex; align-items: center; gap: 12px; overflow: hidden;">
+              <div style="width: 42px; height: 42px; border-radius: 10px; background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.15); display: flex; align-items: center; justify-content: center; color: #ef4444; flex-shrink: 0;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                  <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+                </svg>
+              </div>
+              <div style="display: flex; flex-direction: column; overflow: hidden; text-align: left;">
+                <span style="font-size: 14px; font-weight: 700; color: #111827; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${displayTitle}</span>
+                <span style="font-size: 11.5px; color: #6b7280; margin-top: 3px; display: flex; align-items: center; gap: 8px;">
+                  <span>${slideCount} slides</span>
+                  <span style="display: inline-block; width: 3px; height: 3px; border-radius: 50%; background: #d1d5db;"></span>
+                  <span>${displayDate}</span>
+                </span>
+              </div>
+            </div>
+            <div style="color: #9ca3af; display: flex; align-items: center; padding-left: 8px;">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="9 18 15 12 9 6"></polyline>
+              </svg>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    async function openChatConversation(postId, knownPosts = null) {
+      const listScreen = document.getElementById('chat-list-screen');
+      const chatScreen = document.getElementById('chat-screen');
+      if (listScreen) listScreen.style.display = 'none';
+      if (chatScreen) chatScreen.style.display = 'flex';
+
+      currentPostId = postId;
+      localStorage.setItem('lastPostId', postId);
+
+      // Update URL without refreshing
+      const url = new URL(window.location);
+      url.searchParams.set('postId', postId);
+      window.history.replaceState({}, '', url);
+
+      const titleEl = document.getElementById('active-chat-title');
+      if (titleEl) {
+        let postObj = (knownPosts || userCachedPosts || []).find(p => String(p.id) === String(postId));
+        titleEl.textContent = postObj ? (postObj.title || 'Carousel Chat') : 'Carousel Chat';
+      }
+
+      const chatBox = document.getElementById('chat-box');
+      if (chatBox) chatBox.innerHTML = '';
+
+      try {
+        const chatRes = await fetch(`/api/posts/${postId}/chat`);
+        if (chatRes.ok) {
+          const data = await chatRes.json();
+          chatHistory = data.chatHistory || [];
+
+          if (data.carousel && data.carousel.title && titleEl) {
+            titleEl.textContent = data.carousel.title;
+          }
+
+          // Render chat history
+          chatHistory.forEach(msg => {
+            const div = document.createElement('div');
+            div.className = `chat-message ${msg.role === 'assistant' ? 'assistant' : 'user'}`;
+            div.style.cssText = msg.role === 'assistant'
+              ? 'align-self: flex-start; background: #ffffff; color: #111827; padding: 12px 16px; border-radius: 14px; margin-bottom: 8px; border: 1px solid #e5e7eb; box-shadow: 0 2px 8px rgba(0,0,0,0.04); font-size: 13.5px; line-height: 1.5; max-width: 85%;'
+              : 'align-self: flex-end; background: #ef4444; color: #ffffff; padding: 12px 16px; border-radius: 12px; margin-bottom: 8px; font-size: 13.5px; line-height: 1.5; max-width: 85%;';
+
+            const isJSON = msg.content.includes('{') && msg.content.includes('}');
+            div.textContent = isJSON ? 'Carousel generated successfully! Check preview above.' : msg.content;
+            if (chatBox) chatBox.appendChild(div);
+          });
+
+          // Render carousel in preview
+          if (data.carousel && Array.isArray(data.carousel.slides) && data.carousel.slides.length > 0) {
+            renderChatCarousel(data.carousel);
+          }
+
+          const scrollContainer = document.querySelector('.chat-scroll-container');
+          if (scrollContainer) {
+            scrollContainer.scrollTop = scrollContainer.scrollHeight;
+          }
+        }
+      } catch (err) {
+        console.error('Error opening chat conversation:', err);
+      }
+    }
+
+    function startNewChat(updateHistory = true) {
+      currentPostId = null;
+      localStorage.removeItem('lastPostId');
+
+      if (updateHistory) {
+        const url = new URL(window.location);
+        url.searchParams.delete('postId');
+        window.history.replaceState({}, '', url);
+      }
+
+      const listScreen = document.getElementById('chat-list-screen');
+      const chatScreen = document.getElementById('chat-screen');
+      if (listScreen) listScreen.style.display = 'none';
+      if (chatScreen) chatScreen.style.display = 'flex';
+
+      const titleEl = document.getElementById('active-chat-title');
+      if (titleEl) titleEl.textContent = 'New Carousel Chat';
+
+      const chatBox = document.getElementById('chat-box');
+      if (chatBox) {
+        chatBox.innerHTML = `
+          <div class="chat-message assistant" style="align-self: flex-start; background: #ffffff; color: #111827; padding: 12px 16px; border-radius: 14px; margin-bottom: 8px; border: 1px solid #e5e7eb; box-shadow: 0 2px 8px rgba(0,0,0,0.04); font-size: 13.5px; line-height: 1.5; max-width: 85%;">
+            Start a new carousel project! Enter a topic or paste reference content below.
+          </div>
+        `;
+      }
+
+      const container = document.getElementById('post-chat-card-container');
+      if (container) {
+        container.innerHTML = `
+          <div class="post-card placeholder-card" style="margin: 16px; border-radius: 16px; padding: 32px 16px; text-align: center; background: #ffffff; border: 1px dashed #e5e7eb; box-shadow: 0 4px 16px rgba(0,0,0,0.04); display: flex; flex-direction: column; align-items: center; gap: 12px;">
+            <div style="width: 48px; height: 48px; border-radius: 50%; background: rgba(239, 68, 68, 0.1); display: flex; align-items: center; justify-content: center; color: #ef4444;">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+              </svg>
+            </div>
+            <div style="font-weight: 800; font-size: 15px; color: #111827;">Ready to Create</div>
+            <div style="font-size: 12px; color: #6b7280; line-height: 1.45; max-width: 260px;">Type a topic or prompt in the input below, and Karu AI will generate your carousel instantly!</div>
+          </div>
+        `;
+      }
+
+      const input = document.getElementById('chat-input');
+      if (input) {
+        input.value = '';
+        input.focus();
+      }
+    }
+
+    function sanitizeBackgroundStyle(bgString) {
+      if (!bgString) return '#ffffff';
+      return bgString.replace(/^(background(-color)?\s*:\s*)/i, '').replace(/;+$/, '').trim();
+    }
+
+    function renderChatCarousel(post) {
+      const container = document.getElementById('post-chat-card-container');
+      if (!container || !post) return;
+      const slides = post.slides || [];
+      if (!Array.isArray(slides) || slides.length === 0) return;
+      const totalTokens = post.tokens 
+        ? ((post.tokens.prompt || 0) + (post.tokens.save || 0) + (post.tokens.autopost || 0))
+        : (post.tokens_cost || 22547);
+
+      container.innerHTML = `
+        <div class="post-card post-screenshot-style" id="post-${post.id}" style="background: #ffffff; border-radius: 16px; margin: 16px 16px 20px 16px; overflow: hidden; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.04); border: 1px solid #f3f4f6;">
+          
+          <!-- Post Header (Matching feed.html) -->
+          <div class="post-header" style="display: flex; justify-content: space-between; align-items: center; direction: ltr; padding: 14px 16px; background: #ffffff; border-bottom: 1px solid #f3f4f6;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <div style="width: 36px; height: 36px; border-radius: 50%; background: #ef4444; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 13px; color: #ffffff; flex-shrink: 0; overflow: hidden;">
+                ${post.avatar_url ? `<img src="${post.avatar_url}" style="width:100%;height:100%;object-fit:cover;">` : (post.username || "Creator").slice(0, 2).toUpperCase()}
+              </div>
+              <div style="display: flex; flex-direction: column; text-align: left;">
+                <span style="font-size: 13.5px; font-weight: 700; color: #111827; line-height: 1.2;">${post.username || "Creator"}</span>
+                <span style="font-size: 11px; color: #6b7280; line-height: 1.2; margin-top: 2px;">${post.date || "Today"}</span>
+              </div>
+            </div>
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <span style="font-size: 13.5px; font-weight: 700; color: #111827; letter-spacing: 0.2px;">${totalTokens.toLocaleString()}</span>
+              <svg class="icon-heavy" style="width: 20px; height: 20px; color: #ef4444;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+              </svg>
+            </div>
+          </div>
+          
+          <div class="carousel-wrapper" style="position: relative; width: 100%; aspect-ratio: 1 / 1; background: #fafafa; overflow: hidden; direction: ltr !important;">
+            <div class="carousel-section" data-current-slide="0" data-total-slides="${slides.length}" onscroll="handleCarouselScroll(event)" style="direction: ltr;">
+              <div class="carousel-track" style="direction: ltr;">
+                ${slides.map((slide, slideIdx) => `
+                  <div class="carousel-slide">
+                    <iframe class="slide-iframe" onload="adjustIframeScale()" sandbox="allow-same-origin allow-scripts" style="background: ${sanitizeBackgroundStyle(slide.background_style)}; pointer-events: none;" srcdoc="
+                      <!DOCTYPE html>
+                      <html>
+                      <head>
+                        <meta charset='utf-8'>
+                        <style>
+                          html, body {
+                            margin: 0;
+                            padding: 0;
+                            width: 100%;
+                            height: 100%;
+                            overflow: hidden;
+                            background: transparent;
+                          }
+                        </style>
+                      </head>
+                      <body>
+                        ${(slide.html_content || '').replace(/"/g, '&quot;').replace(/'/g, '&#39;')}
+                      </body>
+                      </html>
+                    "></iframe>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+            
+            <div class="slide-index" style="background: rgba(255,255,255,0.88); color: #111827; border: 1px solid #e5e7eb; box-shadow: 0 2px 5px rgba(0,0,0,0.06); font-weight: 700;">1/${slides.length}</div>
+
+            <div class="carousel-dots" style="bottom: 12px;">
+              ${slides.map((_, slideIdx) => `
+                <span class="dot ${slideIdx === 0 ? 'active' : ''}" onclick="jumpToSlide(this, ${slideIdx})"></span>
+              `).join('')}
+            </div>
+          </div>
+
+          <!-- Post actions: Share (with Download inside modal) in Light Editorial Theme -->
+          <div class="post-actions" style="display: flex; justify-content: flex-start; align-items: center; padding: 12px 16px; border-top: 1px solid #f3f4f6; background: #ffffff; direction: ltr;">
+            <div style="display: flex; align-items: center; gap: 16px;">
+              <button class="btn-share-carousel" onclick="showShareModal('${post.id}', ${post.is_shared})" style="background: none; border: none; color: #111827; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0; transition: transform 0.2s;" title="Share">
+                <svg class="icon-heavy" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="18" cy="5" r="3"></circle>
+                  <circle cx="6" cy="12" r="3"></circle>
+                  <circle cx="18" cy="19" r="3"></circle>
+                  <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
+                  <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
+                </svg>
+              </button>
+            </div>
+          </div>
+          
+          ${(post.description || post.hashtags) ? `
+          <div class="post-content" style="text-align: left; padding: 4px 16px 16px 16px; direction: ltr; background: #ffffff;">
+            ${post.description ? `<p class="post-desc" style="font-size: 13.5px; color: #111827; margin: 0 0 4px 0; line-height: 1.5;">${post.description}</p>` : ''}
+            ${post.hashtags ? `
+            <div class="post-hashtags" style="direction: ltr; text-align: left; margin-top: 6px;">
+              ${post.hashtags.split(' ').map(tag => tag.trim() ? `<span class="hashtag-item" style="color: #ef4444; font-size: 12px; margin-right: 6px; font-weight: 500;">${tag}</span>` : '').join('')}
+            </div>` : ''}
+          </div>` : ''}
+        </div>
+      `;
+      setTimeout(adjustIframeScale, 50);
+    }
+
+    async function showShareModal(postId, isShared) {
+      let existing = document.getElementById('share-options-modal');
+      if (existing) existing.remove();
+
+      const modal = document.createElement('div');
+      modal.id = 'share-options-modal';
+      modal.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;z-index:99999;font-family:var(--font-family);padding:20px;box-sizing:border-box;';
+      
+      const content = document.createElement('div');
+      content.style.cssText = 'background:#ffffff;border:1px solid #e5e7eb;padding:24px;border-radius:16px;box-shadow:0 10px 25px rgba(0,0,0,0.1);width:320px;max-width:100%;text-align:center;display:flex;flex-direction:column;gap:10px;box-sizing:border-box;';
+      
+      const titleEl = document.createElement('h3');
+      titleEl.textContent = 'Share Carousel';
+      titleEl.style.cssText = 'margin:0 0 6px 0;font-size:17px;color:#111827;font-weight:700;';
+      content.appendChild(titleEl);
+
+      const instagramBtn = document.createElement('button');
+      instagramBtn.style.cssText = 'background:#f9fafb;border:1px solid #e5e7eb;padding:12px 16px;border-radius:10px;font-weight:600;cursor:pointer;font-size:13px;color:#111827;display:flex;align-items:center;gap:10px;font-family:var(--font-family);transition:all 0.2s;';
+      instagramBtn.innerHTML = `
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>
+        <span>Share to Instagram</span>
+      `;
+      instagramBtn.onclick = () => {
+        shareToInstagramNative(postId);
+        modal.remove();
+      };
+      content.appendChild(instagramBtn);
+
+      const downloadBtn = document.createElement('button');
+      downloadBtn.style.cssText = 'background:#f9fafb;border:1px solid #e5e7eb;padding:12px 16px;border-radius:10px;font-weight:600;cursor:pointer;font-size:13px;color:#111827;display:flex;align-items:center;gap:10px;font-family:var(--font-family);transition:all 0.2s;';
+      downloadBtn.innerHTML = `
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+        <span>Download Carousel</span>
+      `;
+      downloadBtn.onclick = () => {
+        downloadCarousel(postId);
+        modal.remove();
+      };
+      content.appendChild(downloadBtn);
+
+      const copyBtn = document.createElement('button');
+      copyBtn.style.cssText = 'background:#111827;border:1px solid #374151;padding:12px 16px;border-radius:10px;font-weight:600;cursor:pointer;font-size:13px;color:#ffffff;display:flex;align-items:center;gap:10px;font-family:var(--font-family);transition:all 0.2s;';
+      copyBtn.innerHTML = `
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+        <span>Copy Shareable Link</span>
+      `;
+      copyBtn.onclick = () => {
+        const link = window.location.origin + '/share.html?postId=' + postId;
+        navigator.clipboard.writeText(link).then(() => {
+          showModalPopup('Link Copied', 'Shareable link copied to clipboard!');
+          modal.remove();
+        });
+      };
+      content.appendChild(copyBtn);
+
+      const communityBtn = document.createElement('button');
+      communityBtn.style.cssText = 'background:#111827;border:1px solid #374151;padding:12px 16px;border-radius:10px;font-weight:600;cursor:pointer;font-size:13px;color:#ffffff;display:flex;align-items:center;justify-content:space-between;gap:8px;font-family:var(--font-family);transition:all 0.2s;';
+      communityBtn.innerHTML = `
+        <span style="display:flex;align-items:center;gap:10px;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+          Share to Community
+        </span>
+        <span id="community-status-badge" style="background:${isShared ? 'rgba(16,185,129,0.2)' : 'rgba(239,68,68,0.2)'};color:${isShared ? '#10b981' : '#ef4444'};font-size:10px;padding:2px 8px;border-radius:20px;text-transform:uppercase;font-weight:700;">
+          ${isShared ? 'Shared' : 'Unshared'}
+        </span>
+      `;
+      communityBtn.onclick = async () => {
+        try {
+          const res = await fetch(`/api/posts/${postId}/share-community`, { method: 'POST' });
+          const data = await res.json();
+          if (data.success) {
+            isShared = data.is_shared;
+            const badge = document.getElementById('community-status-badge');
+            if (badge) {
+              badge.style.background = isShared ? 'rgba(16,185,129,0.2)' : 'rgba(239,68,68,0.2)';
+              badge.style.color = isShared ? '#10b981' : '#ef4444';
+              badge.textContent = isShared ? 'Shared' : 'Unshared';
+            }
+            if (typeof initChat === 'function') initChat();
+            showModalPopup(isShared ? 'Shared to Community' : 'Unshared', isShared ? 'Post is now visible in the Community feed!' : 'Post removed from the Community feed.');
+          } else {
+            showModalPopup('Share Error', data.error || 'Failed to update community share');
+          }
+        } catch (e) {
+          console.error(e);
+          showModalPopup('Share Error', e.message || 'Network error');
+        }
+      };
+      content.appendChild(communityBtn);
+
+      const closeBtn = document.createElement('button');
+      closeBtn.textContent = 'Close';
+      closeBtn.style.cssText = 'background:#ef4444;color:#ffffff;border:none;padding:10px;border-radius:8px;font-weight:700;cursor:pointer;font-size:13px;margin-top:6px;font-family:var(--font-family);';
+      closeBtn.onclick = () => { modal.remove(); };
+      content.appendChild(closeBtn);
+
+      modal.appendChild(content);
+      document.body.appendChild(modal);
+    }
+
+    async function sendChatMessage(silentMessage = null, hidden = false) {
+      const input = document.getElementById('chat-input');
+      let text = silentMessage || input.value.trim();
+      
+      if (!text && !pendingImageBase64) return;
+
+      const chatBox = document.getElementById('chat-box');
+      const sendBtn = document.querySelector('.btn-submit');
+
+      // Add user message to UI
+      if (!hidden) {
+        const userDiv = document.createElement('div');
+        userDiv.className = 'chat-message user';
+        userDiv.style.cssText = 'align-self: flex-end; background: #ef4444; color: #ffffff; padding: 12px 16px; border-radius: 12px; margin-bottom: 8px; font-size: 13.5px; line-height: 1.5; max-width: 85%;';
+        let displayHtml = '';
+        if (pendingImageBase64) {
+          displayHtml += `<img src="${pendingImageBase64}" style="max-width: 100%; border-radius: 8px; margin-bottom: 8px; display: block;" />`;
+        }
+        displayHtml += text.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        userDiv.innerHTML = displayHtml;
+        chatBox.appendChild(userDiv);
+      }
+
+      input.value = '';
+      input.style.height = '38px';
+      if (!hidden) {
+        input.disabled = true;
+        if (sendBtn) sendBtn.disabled = true;
+      }
+
+      // Add loading message
+      const loadingDiv = document.createElement('div');
+      loadingDiv.className = 'chat-message assistant loading';
+      loadingDiv.style.cssText = 'align-self: flex-start; background: #ffffff; color: #6b7280; padding: 12px 16px; border-radius: 14px; margin-bottom: 8px; border: 1px solid #e5e7eb; box-shadow: 0 2px 8px rgba(0,0,0,0.04); font-size: 13.5px; line-height: 1.5; max-width: 85%; display: flex; align-items: center; gap: 8px;';
+      loadingDiv.innerHTML = `<svg class="spinner" width="16" height="16" viewBox="0 0 50 50" style="animation: rotate 2s linear infinite; color: #ef4444;"><circle cx="25" cy="25" r="20" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round" style="stroke-dasharray: 1, 150; stroke-dashoffset: 0; animation: dash 1.5s ease-in-out infinite;"></circle></svg><span>Thinking & generating slides...</span>`;
+      chatBox.appendChild(loadingDiv);
+
+      const scrollContainer = document.querySelector('.chat-scroll-container');
+      if (scrollContainer) scrollContainer.scrollTop = scrollContainer.scrollHeight;
+
+      // Handle offline or file:// protocol
+      if (window.location.protocol === 'file:') {
+        setTimeout(() => {
+          loadingDiv.remove();
+          const replyDiv = document.createElement('div');
+          replyDiv.className = 'chat-message assistant';
+          replyDiv.style.cssText = 'align-self: flex-start; background: #ffffff; color: #111827; padding: 12px 16px; border-radius: 14px; margin-bottom: 8px; border: 1px solid #e5e7eb; box-shadow: 0 2px 8px rgba(0,0,0,0.04); font-size: 13.5px; line-height: 1.5; max-width: 85%;';
+          replyDiv.textContent = `Offline Demo: Generated ideas for "${text}". Start the server with npm start to use full AI generation!`;
+          chatBox.appendChild(replyDiv);
+          input.disabled = false;
+          if (sendBtn) sendBtn.disabled = false;
+          input.focus();
+        }, 800);
+        return;
+      }
+
+      try {
+        const payload = {
+          message: text,
+          postId: currentPostId,
+          image: pendingImageBase64
+        };
+        clearChatImage();
+
+        const res = await fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        const data = await res.json();
+        loadingDiv.remove();
+
+        if (!res.ok) {
+          throw new Error(data.error || 'Failed to send message');
+        }
+
+        let carouselObj = data.carousel;
+        let replyText = data.reply;
+
+        if (typeof replyText === 'object' && replyText !== null) {
+          if (replyText.slides && !carouselObj) {
+            carouselObj = replyText;
+            replyText = `הקרוסלה נוצרה בהצלחה! (${carouselObj.slides.length} שקופיות)`;
+          } else {
+            replyText = replyText.message || replyText.text || JSON.stringify(replyText);
+          }
+        }
+
+        const replyDiv = document.createElement('div');
+        replyDiv.className = 'chat-message assistant';
+        replyDiv.style.cssText = 'align-self: flex-start; background: #ffffff; color: #111827; padding: 12px 16px; border-radius: 14px; margin-bottom: 8px; border: 1px solid #e5e7eb; box-shadow: 0 2px 8px rgba(0,0,0,0.04); font-size: 13.5px; line-height: 1.5; max-width: 85%;';
+        
+        let displayMessage = typeof replyText === 'string' ? replyText : (data.reply || data.message || 'Changes applied successfully!');
+        if (displayMessage.includes('{') && displayMessage.includes('}') && (displayMessage.includes('"slides"') || displayMessage.includes('slide_index'))) {
+          displayMessage = '✅ הקרוסלה נוצרה בהצלחה בעברית! תצוגה מקדימה מופיעה למעלה.';
+        }
+        replyDiv.textContent = displayMessage;
+        chatBox.appendChild(replyDiv);
+
+        const plan = data.imagePlan || (data.carousel && data.carousel.type === 'image_plan' ? data.carousel : null) || (carouselObj && carouselObj.type === 'image_plan' ? carouselObj : null);
+
+        if (plan && Array.isArray(plan.images) && plan.images.length > 0) {
+          // Display the interactive Image Plan Approval Card
+          const approvalCard = document.createElement('div');
+          approvalCard.className = 'image-plan-card';
+          approvalCard.style.cssText = 'align-self: flex-start; background: #ffffff; border: 1.5px solid #e0e7ff; border-radius: 16px; padding: 18px 20px; margin-bottom: 12px; box-shadow: 0 4px 15px rgba(99, 102, 241, 0.08); max-width: 90%; direction: rtl; text-align: right;';
+          
+          let imagesListHtml = plan.images.map((img, idx) => {
+            const desc = typeof img === 'string' ? img : (img.description || img.prompt || `תמונה ${idx + 1}`);
+            return `<li style="margin-bottom: 6px; color: #374151; font-size: 13.5px; line-height: 1.4;">
+              <span style="font-weight: 700; color: #4f46e5;">• תמונה ${idx + 1}:</span> ${desc}
+            </li>`;
+          }).join('');
+
+          approvalCard.innerHTML = `
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px;">
+              <span style="font-size: 20px;">🎨</span>
+              <h4 style="margin: 0; font-size: 15px; font-weight: 800; color: #1e1b4b;">תוכנית תמונות לקרוסלה</h4>
+            </div>
+            <p style="margin: 0 0 12px 0; font-size: 13px; color: #6b7280;">
+              ה-AI תכנן עבורך את התמונות הבאות להמחשת השקופיות. לחץ על הכפתור כדי לאשר את יצירתן והרכבת הקרוסלה:
+            </p>
+            <ul style="padding-right: 18px; margin: 0 0 16px 0;">
+              ${imagesListHtml}
+            </ul>
+            <div id="plan-actions-${Date.now()}" style="display: flex; gap: 10px; flex-wrap: wrap;">
+              <button class="btn-approve-images" style="display: inline-flex; align-items: center; gap: 6px; background: linear-gradient(135deg, #ef4444, #dc2626); color: #ffffff; border: none; padding: 9px 18px; border-radius: 10px; font-weight: 700; font-size: 13.5px; cursor: pointer; transition: all 0.2s; box-shadow: 0 2px 6px rgba(239, 68, 68, 0.25);">
+                <span>✨ אשר והפק תמונות עכשיו</span>
+              </button>
+              <button class="btn-reject-images" style="display: inline-flex; align-items: center; gap: 6px; background: #f3f4f6; color: #4b5563; border: 1px solid #d1d5db; padding: 9px 16px; border-radius: 10px; font-weight: 600; font-size: 13px; cursor: pointer; transition: all 0.2s;">
+                <span>המשך בעיצוב טקסטואלי בלבד</span>
+              </button>
+            </div>
+            <div class="plan-status-area" style="display: none; margin-top: 14px; font-size: 13px; font-weight: 600; color: #4f46e5; align-items: center; gap: 8px;">
+              <svg class="spinner" width="16" height="16" viewBox="0 0 50 50" style="animation: rotate 2s linear infinite; color: #4f46e5;"><circle cx="25" cy="25" r="20" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round" style="stroke-dasharray: 1, 150; stroke-dashoffset: 0; animation: dash 1.5s ease-in-out infinite;"></circle></svg>
+              <span class="plan-status-text">מייצר תמונות ומעדכן קרוסלה...</span>
+            </div>
+          `;
+
+          chatBox.appendChild(approvalCard);
+
+          const actionsDiv = approvalCard.querySelector('[id^="plan-actions-"]');
+          const approveBtn = approvalCard.querySelector('.btn-approve-images');
+          const rejectBtn = approvalCard.querySelector('.btn-reject-images');
+          const statusArea = approvalCard.querySelector('.plan-status-area');
+          const statusText = approvalCard.querySelector('.plan-status-text');
+
+          approveBtn.onclick = async () => {
+            if (actionsDiv) actionsDiv.style.display = 'none';
+            if (statusArea) statusArea.style.display = 'flex';
+            if (statusText) statusText.textContent = 'מייצר את התמונות במודל ה-AI (נא להמתין מספר שניות)...';
+
+            try {
+              const prompts = plan.images.map(img => typeof img === 'string' ? img : (img.description || img.prompt));
+              const token = localStorage.getItem('authToken') || localStorage.getItem('token') || '';
+              const imgRes = await fetch('/api/generate-images', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+                },
+                body: JSON.stringify({ prompts })
+              });
+
+              if (!imgRes.ok) {
+                const errData = await imgRes.json().catch(() => ({}));
+                throw new Error(errData.error || 'נכשלה יצירת התמונות');
+              }
+
+              const imgData = await imgRes.json();
+              const urls = imgData.urls || [];
+              if (urls.length === 0) {
+                throw new Error('לא התקבלו כתובות תמונה מהשרת');
+              }
+
+              if (statusText) statusText.textContent = 'התמונות נוצרו! כותב ומעצב את שקופיות הקרוסלה...';
+
+              // Call /api/chat with the generated image URLs to complete carousel generation
+              const callbackMessage = `Images generated successfully. URLs: ${JSON.stringify(urls)}. Please write the HTML and output the final carousel JSON now.`;
+              await sendChatMessage(callbackMessage, true);
+              if (statusArea) {
+                statusArea.innerHTML = `<span style="color: #10b981; font-weight: 700;">✓ התמונות הופקו והקרוסלה עודכנה בהצלחה!</span>`;
+              }
+            } catch (imageErr) {
+              console.error('Image generation error:', imageErr);
+              if (statusArea) {
+                statusArea.innerHTML = `<span style="color: #ef4444; font-weight: 700;">שגיאה ביצירת התמונות: ${imageErr.message || 'נסה שוב מאוחר יותר'}</span>`;
+              }
+              if (actionsDiv) actionsDiv.style.display = 'flex';
+            }
+          };
+
+          rejectBtn.onclick = async () => {
+            if (actionsDiv) actionsDiv.style.display = 'none';
+            if (statusArea) {
+              statusArea.style.display = 'flex';
+              statusText.textContent = 'יוצר קרוסלה טקסטואלית מעוצבת...';
+            }
+            await sendChatMessage('צור את הקרוסלה ללא תמונות, השתמש בעיצוב טיפוגרפי ו-CSS נקי בלבד.', false);
+          };
+
+        } else if (carouselObj && Array.isArray(carouselObj.slides) && carouselObj.slides.length > 0) {
+          currentPostId = carouselObj.id || data.postId || (data.carousel ? data.carousel.id : null);
+          if (currentPostId) localStorage.setItem('lastPostId', currentPostId);
+          renderChatCarousel(carouselObj);
+          const titleEl = document.getElementById('active-chat-title');
+          if (titleEl && (carouselObj.title || carouselObj.slides[0]?.title)) {
+            titleEl.textContent = carouselObj.title || carouselObj.slides[0]?.title;
+          }
+        } else if (data.carousel && Array.isArray(data.carousel.slides) && data.carousel.slides.length > 0) {
+          currentPostId = data.carousel.id;
+          localStorage.setItem('lastPostId', currentPostId);
+          renderChatCarousel(data.carousel);
+          const titleEl = document.getElementById('active-chat-title');
+          if (titleEl && data.carousel.title) {
+            titleEl.textContent = data.carousel.title;
+          }
+        }
+
+      } catch (err) {
+        console.error('Chat send error:', err);
+        loadingDiv.remove();
+        const errDiv = document.createElement('div');
+        errDiv.className = 'chat-message assistant error';
+        errDiv.style.cssText = 'align-self: flex-start; background: #fef2f2; color: #ef4444; padding: 12px 16px; border-radius: 14px; margin-bottom: 8px; border: 1px solid #fecaca; font-size: 13.5px;';
+        errDiv.textContent = err.message || 'Error communicating with assistant';
+        chatBox.appendChild(errDiv);
+      } finally {
+        input.disabled = false;
+        if (sendBtn) sendBtn.disabled = false;
+        input.focus();
+        if (scrollContainer) scrollContainer.scrollTop = scrollContainer.scrollHeight;
+      }
+    }
+
+    function handleCarouselScroll(event) {
+      const carousel = event.currentTarget;
+      const slideWidth = carousel.clientWidth;
+      if (slideWidth <= 0) return;
+      const activeIndex = Math.round(carousel.scrollLeft / slideWidth);
+      const currentSlide = parseInt(carousel.getAttribute('data-current-slide') || '0');
+      if (activeIndex !== currentSlide) {
+        carousel.setAttribute('data-current-slide', activeIndex);
+        updateCarouselUI(carousel);
+      }
+    }
+
+    function jumpToSlide(dot, index) {
+      const wrapper = dot.closest('.carousel-wrapper') || dot.closest('.post-card') || dot.closest('.carousel-section');
+      const carousel = wrapper.querySelector('.carousel-section') || wrapper;
+      carousel.setAttribute('data-current-slide', index);
+      const slideWidth = carousel.clientWidth;
+      carousel.scrollTo({
+        left: index * slideWidth,
+        behavior: 'smooth'
+      });
+      updateCarouselUI(carousel);
+    }
+
+    function updateCarouselUI(carousel) {
+      const currentSlide = parseInt(carousel.getAttribute('data-current-slide') || '0');
+      const totalSlides = parseInt(carousel.getAttribute('data-total-slides') || '1');
+      const wrapper = carousel.closest('.carousel-wrapper') || carousel.closest('.post-card') || carousel;
+      const dots = wrapper.querySelectorAll('.dot');
+      dots.forEach((dot, idx) => {
+        if (idx === currentSlide) {
+          dot.classList.add('active');
+        } else {
+          dot.classList.remove('active');
+        }
+      });
+      // Update the fixed slide number indicator
+      const slideIndexEl = wrapper.querySelector(':scope > .slide-index');
+      if (slideIndexEl) {
+        slideIndexEl.textContent = `${currentSlide + 1}/${totalSlides}`;
+      }
+    }
+
+    function prevSlide(btn) {
+      const wrapper = btn.closest('.carousel-wrapper') || btn.closest('.post-card');
+      if (!wrapper) return;
+      const carousel = wrapper.querySelector('.carousel-section');
+      if (!carousel) return;
+      const currentSlide = parseInt(carousel.getAttribute('data-current-slide') || '0');
+      const totalSlides = parseInt(carousel.getAttribute('data-total-slides') || '1');
+      const nextIndex = Math.max(0, currentSlide - 1);
+      const dots = wrapper.querySelectorAll('.dot');
+      if (dots[nextIndex]) {
+        jumpToSlide(dots[nextIndex], nextIndex);
+      } else {
+        const slideWidth = carousel.clientWidth;
+        carousel.scrollTo({ left: nextIndex * slideWidth, behavior: 'smooth' });
+        carousel.setAttribute('data-current-slide', nextIndex);
+        updateCarouselUI(carousel);
+      }
+    }
+
+    function nextSlide(btn) {
+      const wrapper = btn.closest('.carousel-wrapper') || btn.closest('.post-card');
+      if (!wrapper) return;
+      const carousel = wrapper.querySelector('.carousel-section');
+      if (!carousel) return;
+      const currentSlide = parseInt(carousel.getAttribute('data-current-slide') || '0');
+      const totalSlides = parseInt(carousel.getAttribute('data-total-slides') || '1');
+      const nextIndex = Math.min(totalSlides - 1, currentSlide + 1);
+      const dots = wrapper.querySelectorAll('.dot');
+      if (dots[nextIndex]) {
+        jumpToSlide(dots[nextIndex], nextIndex);
+      } else {
+        const slideWidth = carousel.clientWidth;
+        carousel.scrollTo({ left: nextIndex * slideWidth, behavior: 'smooth' });
+        carousel.setAttribute('data-current-slide', nextIndex);
+        updateCarouselUI(carousel);
+      }
+    }
+
+    function enableMouseDragScroll(container) {
+      if (!container || container._hasMouseDrag) return;
+      container._hasMouseDrag = true;
+      let isDown = false;
+      let startX, scrollLeft;
+
+      container.addEventListener('mousedown', (e) => {
+        if (e.target.closest('.carousel-nav-btn') || e.target.closest('.carousel-dots')) return;
+        isDown = true;
+        container.style.cursor = 'grabbing';
+        startX = e.pageX - container.offsetLeft;
+        scrollLeft = container.scrollLeft;
+      });
+
+      window.addEventListener('mouseup', () => {
+        if (isDown) {
+          isDown = false;
+          container.style.cursor = 'grab';
+        }
+      });
+
+      container.addEventListener('mouseleave', () => {
+        if (isDown) {
+          isDown = false;
+          container.style.cursor = 'grab';
+        }
+      });
+
+      container.addEventListener('mousemove', (e) => {
+        if (!isDown) return;
+        e.preventDefault();
+        const x = e.pageX - container.offsetLeft;
+        const walk = (x - startX) * 1.5;
+        container.scrollLeft = scrollLeft - walk;
+      });
+    }
+
+    function adjustIframeScale() {
+      const slides = document.querySelectorAll('.carousel-slide');
+      slides.forEach(slide => {
+        const iframe = slide.querySelector('.slide-iframe');
+        if (iframe) {
+          const containerWidth = slide.clientWidth;
+          if (containerWidth > 0) {
+            const scale = containerWidth / 540;
+            iframe.style.transform = `scale(${scale})`;
+          }
+        }
+      });
+      document.querySelectorAll('.carousel-section').forEach(sec => {
+        enableMouseDragScroll(sec);
+      });
+    }
+
+    window.addEventListener('resize', adjustIframeScale);
+    document.addEventListener('DOMContentLoaded', () => {
+      initChat();
+      setTimeout(adjustIframeScale, 500);
+      
+      const scrollContainer = document.querySelector('.chat-scroll-container');
+      if (scrollContainer) {
+        scrollContainer.addEventListener('scroll', updateScrollHelpers);
+        window.addEventListener('resize', updateScrollHelpers);
+        
+        const observer = new MutationObserver(updateScrollHelpers);
+        observer.observe(scrollContainer, { childList: true, subtree: true });
+        
+        setTimeout(updateScrollHelpers, 100);
+        setTimeout(updateScrollHelpers, 600);
+      }
+    });
+
+    async function downloadCarousel(postId) {
+      const btn = document.querySelector(`#post-${postId} .btn-download-carousel`);
+      const originalHTML = btn ? btn.innerHTML : '';
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = `<svg class="spinner" width="16" height="16" viewBox="0 0 50 50" style="animation: rotate 2s linear infinite; color: #ef4444;"><circle cx="25" cy="25" r="20" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round" style="stroke-dasharray: 1, 150; stroke-dashoffset: 0; animation: dash 1.5s ease-in-out infinite;"></circle></svg>`;
+      }
+      
+      try {
+        let post;
+        const res = await fetch(`/api/posts/${postId}/chat`);
+        if (res.ok) {
+          const data = await res.json();
+          post = data.carousel;
+        }
+        
+        if (!post || !post.slides) throw new Error('Post or slides not found');
+        
+        const tempIframe = document.createElement('iframe');
+        tempIframe.style.width = '540px';
+        tempIframe.style.height = '540px';
+        tempIframe.style.position = 'fixed';
+        tempIframe.style.top = '-9999px';
+        tempIframe.style.left = '-9999px';
+        tempIframe.style.border = 'none';
+        document.body.appendChild(tempIframe);
+        
+        const slides = post.slides;
+        for (let i = 0; i < slides.length; i++) {
+          const slide = slides[i];
+          const iframeDoc = tempIframe.contentWindow.document;
+          iframeDoc.open();
+          iframeDoc.write(`
+            <!DOCTYPE html>
+            <html>
+            <head>
+              <meta charset="utf-8">
+              <style>
+                html, body {
+                  margin: 0;
+                  padding: 0;
+                  width: 540px;
+                  height: 540px;
+                  overflow: hidden;
+                  background: ${sanitizeBackgroundStyle(slide.background_style)};
+                }
+              </style>
+            </head>
+            <body>
+              ${slide.html_content}
+            </body>
+            </html>
+          `);
+          iframeDoc.close();
+          
+          await Promise.all([
+            iframeDoc.fonts ? iframeDoc.fonts.ready : Promise.resolve(),
+            new Promise(resolve => {
+              const images = Array.from(iframeDoc.images);
+              if (images.length === 0) return resolve();
+              let loaded = 0;
+              images.forEach(img => {
+                if (img.complete) {
+                  loaded++;
+                  if (loaded === images.length) resolve();
+                } else {
+                  img.onload = img.onerror = () => {
+                    loaded++;
+                    if (loaded === images.length) resolve();
+                  };
+                }
+              });
+            })
+          ]);
+          await new Promise(resolve => setTimeout(resolve, 200));
+          
+          const canvas = await html2canvas(iframeDoc.body, {
+            width: 540,
+            height: 540,
+            scale: 2,
+            useCORS: true,
+            allowTaint: true,
+            logging: false
+          });
+          
+          const link = document.createElement('a');
+          link.download = `${(post.title || 'carousel').replace(/[^a-zA-Z0-9-]+/g, '_')}_slide_${i + 1}.png`;
+          link.href = canvas.toDataURL('image/png');
+          link.click();
+        }
+        
+        document.body.removeChild(tempIframe);
+        showModalPopup('Download Complete', 'All slides downloaded successfully!');
+      } catch (err) {
+        console.error('Download error:', err);
+        showModalPopup('Download Error', err.message || 'Failed to download slides');
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = originalHTML;
+        }
+      }
+    }
+
+    async function shareToInstagramNative(postId) {
+      try {
+        let post;
+        const res = await fetch(`/api/posts/${postId}/chat`);
+        if (res.ok) {
+          const data = await res.json();
+          post = data.carousel;
+        }
+
+        if (!post || !post.slides || !post.slides.length) throw new Error('Post or slides not found');
+
+        const fullCaption = `${post.description || ''}\n\n${post.hashtags || ''}`.trim();
+        const slidesImages = [];
+
+        const tempIframe = document.createElement('iframe');
+        tempIframe.style.width = '540px';
+        tempIframe.style.height = '540px';
+        tempIframe.style.position = 'fixed';
+        tempIframe.style.top = '-9999px';
+        tempIframe.style.left = '-9999px';
+        tempIframe.style.border = 'none';
+        document.body.appendChild(tempIframe);
+
+        for (let i = 0; i < post.slides.length; i++) {
+          const slide = post.slides[i];
+          const iframeDoc = tempIframe.contentWindow.document;
+          iframeDoc.open();
+          iframeDoc.write(`
+            <!DOCTYPE html>
+            <html>
+            <head>
+              <meta charset="utf-8">
+              <style>
+                html, body {
+                  margin: 0;
+                  padding: 0;
+                  width: 540px;
+                  height: 540px;
+                  overflow: hidden;
+                  background: ${sanitizeBackgroundStyle(slide.background_style)};
+                }
+              </style>
+            </head>
+            <body>
+              ${slide.html_content}
+            </body>
+            </html>
+          `);
+          iframeDoc.close();
+
+          await Promise.all([
+            iframeDoc.fonts ? iframeDoc.fonts.ready : Promise.resolve(),
+            new Promise(resolve => {
+              const images = Array.from(iframeDoc.images);
+              if (images.length === 0) return resolve();
+              let loaded = 0;
+              images.forEach(img => {
+                if (img.complete) {
+                  loaded++;
+                  if (loaded === images.length) resolve();
+                } else {
+                  img.onload = img.onerror = () => {
+                    loaded++;
+                    if (loaded === images.length) resolve();
+                  };
+                }
+              });
+            })
+          ]);
+          await new Promise(resolve => setTimeout(resolve, 200));
+
+          const canvas = await html2canvas(iframeDoc.body, {
+            width: 540,
+            height: 540,
+            scale: 2,
+            useCORS: true,
+            allowTaint: true,
+            logging: false
+          });
+
+          slidesImages.push(canvas.toDataURL('image/png'));
+        }
+
+        document.body.removeChild(tempIframe);
+
+        const apiRes = await fetch('/api/social/publish-instagram', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            postId: postId,
+            slidesImages: slidesImages,
+            caption: fullCaption
+          })
+        });
+
+        const apiData = await apiRes.json();
+        if (!apiRes.ok || !apiData.success) {
+          throw new Error(apiData.error || 'Error publishing to Instagram');
+        }
+
+        showModalPopup('Instagram Published!', 'Carousel published successfully to your Instagram account!');
+      } catch (err) {
+        console.error('Instagram publish error:', err);
+        showModalPopup('Instagram Publish', err.message || 'Could not publish to Instagram');
+      }
+    }
+
+    async function deleteCarousel(postId) {
+      if (!confirm('Are you sure you want to delete this post permanently?')) return;
+      try {
+        const res = await fetch(`/api/posts/${postId}`, { method: 'DELETE' });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Error deleting post');
+        
+        const card = document.getElementById(`post-${postId}`);
+        if (card) card.remove();
+        localStorage.removeItem('lastPostId');
+        openChatList();
+      } catch (err) {
+        console.error('Delete error:', err);
+        showModalPopup('Delete Error', err.message);
+      }
+    }
+
+    function scrollToTopChat() {
+      const scrollContainer = document.querySelector('.chat-scroll-container');
+      if (scrollContainer) {
+        scrollContainer.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    }
+
+    function scrollToBottomChat() {
+      const scrollContainer = document.querySelector('.chat-scroll-container');
+      if (scrollContainer) {
+        scrollContainer.scrollTo({ top: scrollContainer.scrollHeight, behavior: 'smooth' });
+      }
+    }
+
+    function updateScrollHelpers() {
+      const scrollContainer = document.querySelector('.chat-scroll-container');
+      const topBtn = document.getElementById('btn-scroll-top');
+      const btmBtn = document.getElementById('btn-scroll-bottom');
+      const controls = document.querySelector('.scroll-helper-controls');
+      if (!scrollContainer || !topBtn || !btmBtn || !controls) return;
+
+      const isScrollable = scrollContainer.scrollHeight > scrollContainer.clientHeight + 40;
+      if (!isScrollable) {
+        controls.style.display = 'none';
+        return;
+      }
+
+      controls.style.display = 'flex';
+      const scrollTop = scrollContainer.scrollTop;
+      const maxScroll = scrollContainer.scrollHeight - scrollContainer.clientHeight;
+
+      if (scrollTop > 80) {
+        topBtn.style.display = 'flex';
+      } else {
+        topBtn.style.display = 'none';
+      }
+
+      if (scrollTop < maxScroll - 80) {
+        btmBtn.style.display = 'flex';
+      } else {
+        btmBtn.style.display = 'none';
+      }
+    }
+
+  </script>
+</body>
+</html>

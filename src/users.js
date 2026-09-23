@@ -1,0 +1,241 @@
+import { Hono } from 'hono';
+import { sign } from 'hono/jwt';
+import { setCookie, deleteCookie } from 'hono/cookie';
+import { hashPassword, verifyPassword, authenticateToken, requireAdmin } from './auth.js';
+
+export const usersApp = new Hono();
+
+// 1. SIGNUP
+usersApp.post('/api/auth/signup', async (c) => {
+  const { username, email, password } = await c.req.json();
+  if (!username || !email || !password || password.length < 6) {
+    return c.json({ error: 'Please fill in all required fields (password min 6 chars).' }, 400);
+  }
+
+  const db = c.env.DB;
+  const cleanEmail = email.toLowerCase().trim();
+  const cleanUsername = username.trim();
+
+  try {
+    const existing = await db.prepare('SELECT id FROM users WHERE email = ?').bind(cleanEmail).first();
+    if (existing) {
+      return c.json({ error: 'This email address is already registered.' }, 400);
+    }
+
+    const userId = 'u_' + crypto.randomUUID().slice(0, 8);
+    const hash = hashPassword(password);
+
+    await db.prepare(`
+      INSERT INTO users (id, username, email, password_hash, subscription, posts_left, role)
+      VALUES (?, ?, ?, ?, 'free', 3, 'user')
+    `).bind(userId, cleanUsername, cleanEmail, hash).run();
+
+    const newUser = {
+      id: userId,
+      username: cleanUsername,
+      email: cleanEmail,
+      subscription: 'free',
+      posts_left: 3,
+      role: 'user'
+    };
+
+    const secret = c.env.JWT_SECRET || 'karu_ai_secure_jwt_secret_2026_key';
+    const token = await sign({ id: userId, email: cleanEmail, role: 'user' }, secret, 'HS256');
+
+    setCookie(c, 'authToken', token, {
+      path: '/',
+      maxAge: 864000,
+      httpOnly: true,
+      secure: true,
+      sameSite: 'None'
+    });
+
+    return c.json({ success: true, token, user: newUser });
+  } catch (err) {
+    console.error('Signup error:', err);
+    return c.json({ error: 'Internal server error during user registration.' }, 500);
+  }
+});
+
+// 2. LOGIN
+usersApp.post('/api/auth/login', async (c) => {
+  const { email, password } = await c.req.json();
+  if (!email || !password) {
+    return c.json({ error: 'Please enter email and password.' }, 400);
+  }
+
+  const db = c.env.DB;
+  const cleanEmail = email.toLowerCase().trim();
+
+  try {
+    const user = await db.prepare('SELECT * FROM users WHERE email = ?').bind(cleanEmail).first();
+    if (!user) {
+      return c.json({ error: 'Incorrect login details.' }, 400);
+    }
+
+    const isValid = await verifyPassword(password, user.password_hash, user.id, db);
+    if (!isValid) {
+      return c.json({ error: 'Incorrect login details.' }, 400);
+    }
+
+    const resUser = {
+      id: user.id,
+      username: user.username,
+      email: user.email,
+      subscription: user.subscription,
+      posts_left: user.posts_left,
+      role: user.role || 'user'
+    };
+
+    const secret = c.env.JWT_SECRET || 'karu_ai_secure_jwt_secret_2026_key';
+    const token = await sign({ id: user.id, email: user.email, role: user.role || 'user' }, secret, 'HS256');
+
+    setCookie(c, 'authToken', token, {
+      path: '/',
+      maxAge: 864000,
+      httpOnly: true,
+      secure: true,
+      sameSite: 'None'
+    });
+
+    return c.json({ success: true, token, user: resUser });
+  } catch (err) {
+    console.error('Login error:', err);
+    return c.json({ error: 'Internal server error during login.' }, 500);
+  }
+});
+
+// 3. GET CURRENT USER
+usersApp.get('/api/auth/me', authenticateToken, async (c) => {
+  const user = c.get('user');
+  const db = c.env.DB;
+
+  try {
+    const dbUser = await db.prepare(`
+      SELECT id, username, email, subscription, posts_left, instagram_connected, preferred_time, phone, bio, role 
+      FROM users WHERE id = ?
+    `).bind(user.id).first();
+
+    if (!dbUser) {
+      return c.json({ error: 'User does not exist' }, 401);
+    }
+
+    return c.json(dbUser);
+  } catch (err) {
+    return c.json({ error: 'Failed to fetch user data' }, 500);
+  }
+});
+
+// 4. LOGOUT
+usersApp.post('/api/auth/logout', (c) => {
+  deleteCookie(c, 'authToken', {
+    path: '/',
+    secure: true,
+    sameSite: 'None'
+  });
+  return c.json({ success: true, message: 'Logged out successfully' });
+});
+
+// 5. UPDATE PROFILE
+usersApp.post('/api/users/profile', authenticateToken, async (c) => {
+  const user = c.get('user');
+  const { phone, bio } = await c.req.json();
+  const db = c.env.DB;
+
+  try {
+    await db.prepare('UPDATE users SET phone = ?, bio = ? WHERE id = ?')
+      .bind(phone || '', bio || '', user.id)
+      .run();
+    return c.json({ success: true, phone, bio });
+  } catch (err) {
+    return c.json({ error: 'Failed to update profile' }, 500);
+  }
+});
+
+// 6. UPDATE INSTAGRAM STATUS
+usersApp.post('/api/users/instagram', authenticateToken, async (c) => {
+  const user = c.get('user');
+  const { connected } = await c.req.json();
+  const db = c.env.DB;
+
+  try {
+    await db.prepare('UPDATE users SET instagram_connected = ? WHERE id = ?')
+      .bind(connected ? 1 : 0, user.id)
+      .run();
+    return c.json({ success: true, connected: !!connected });
+  } catch (err) {
+    return c.json({ error: 'Failed to update instagram status' }, 500);
+  }
+});
+
+// 7. UPDATE TIME
+usersApp.post('/api/users/time', authenticateToken, async (c) => {
+  const user = c.get('user');
+  const { time } = await c.req.json();
+  const db = c.env.DB;
+
+  try {
+    await db.prepare('UPDATE users SET preferred_time = ? WHERE id = ?')
+      .bind(time, user.id)
+      .run();
+    return c.json({ success: true, time });
+  } catch (err) {
+    return c.json({ error: 'Failed to update preferred time' }, 500);
+  }
+});
+
+// 8. ADMIN: LIST ALL USERS
+usersApp.get('/api/users', requireAdmin, async (c) => {
+  const db = c.env.DB;
+  try {
+    const { results } = await db.prepare(`
+      SELECT id, username, email, subscription, posts_left, role, created_at, instagram_connected, preferred_time
+      FROM users ORDER BY created_at DESC
+    `).all();
+    return c.json(results || []);
+  } catch (err) {
+    return c.json({ error: 'Failed to fetch users list' }, 500);
+  }
+});
+
+// 9. ADMIN: UPDATE SUBSCRIPTION
+usersApp.put('/api/users/:id/subscription', requireAdmin, async (c) => {
+  const id = c.req.param('id');
+  const { subscription } = await c.req.json();
+  const db = c.env.DB;
+
+  try {
+    await db.prepare('UPDATE users SET subscription = ? WHERE id = ?').bind(subscription, id).run();
+    return c.json({ success: true });
+  } catch (err) {
+    return c.json({ error: 'Failed to update subscription' }, 500);
+  }
+});
+
+// 10. ADMIN: UPDATE ROLE
+usersApp.put('/api/users/:id/role', requireAdmin, async (c) => {
+  const id = c.req.param('id');
+  const { role } = await c.req.json();
+  const db = c.env.DB;
+
+  try {
+    await db.prepare('UPDATE users SET role = ? WHERE id = ?').bind(role, id).run();
+    return c.json({ success: true });
+  } catch (err) {
+    return c.json({ error: 'Failed to update user role' }, 500);
+  }
+});
+
+// 11. ADMIN: UPDATE POSTS LEFT
+usersApp.put('/api/users/:id/posts-left', requireAdmin, async (c) => {
+  const id = c.req.param('id');
+  const { posts_left } = await c.req.json();
+  const db = c.env.DB;
+
+  try {
+    await db.prepare('UPDATE users SET posts_left = ? WHERE id = ?').bind(posts_left, id).run();
+    return c.json({ success: true });
+  } catch (err) {
+    return c.json({ error: 'Failed to update posts count' }, 500);
+  }
+});

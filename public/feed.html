@@ -1,0 +1,2568 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <script src="/auth_helper.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Karu AI - Feed</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;700;800;900&family=Outfit:wght@300;400;500;700;800;900&family=Playpen+Sans:wght@300;400;700&display=swap');
+
+    /* Load Rubik font */
+    @font-face {
+      font-family: 'Rubik';
+      src: url('Rubik.ttf') format('truetype');
+      font-weight: 300 900;
+      font-display: swap;
+    }
+
+    :root {
+      --color-primary: #34E0A1; /* Accent green */
+      --color-primary-glow: rgba(52, 224, 161, 0.15);
+      --color-bg: #000000; /* Deep black */
+      --color-card-bg: rgba(15, 15, 20, 0.85);
+      --color-card-border: rgba(255, 255, 255, 0.08);
+      --color-primary: #ef4444; /* Palette 18 Crimson Red */
+      --color-primary-hover: #dc2626;
+      --color-primary-glow: rgba(239, 68, 68, 0.25);
+      --color-bg: #111827; /* Deep Slate Gray-900 */
+      --color-card-bg: #1f2937; /* Slate Gray-800 */
+      --color-card-border: #374151; /* Slate Gray-700 */
+      --color-text-main: #FFFFFF;
+      --color-text-muted: #8E8E93;
+      --color-input-bg: rgba(255, 255, 255, 0.04);
+      --color-input-border: rgba(255, 255, 255, 0.1);
+      --color-danger: #FF453A;
+      --font-family: 'Rubik', system-ui, -apple-system, sans-serif;
+      --color-text-muted: #9ca3af; /* Gray-400 */
+      --color-input-bg: #1f2937;
+      --color-input-border: #374151;
+      --color-danger: #ef4444;
+      --brand-ruby: #ef4444;
+      --font-family: 'Inter', 'Heebo', system-ui, -apple-system, sans-serif;
+    }
+
+    /* Basic reset */
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body, html {
+      height: 100%;
+      width: 100%;
+      overflow: hidden;
+      font-family: var(--font-family);
+      background-color: #e5e7eb;
+      background-image: 
+        linear-gradient(45deg, #d1d5db 25%, transparent 25%), 
+        linear-gradient(-45deg, #d1d5db 25%, transparent 25%), 
+        linear-gradient(45deg, transparent 75%, #d1d5db 75%), 
+        linear-gradient(-45deg, transparent 75%, #d1d5db 75%);
+      background-size: 20px 20px;
+      background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+      color: var(--color-text-main);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    /* Premium mobile frame */
+    /* Premium mobile frame (Palette 18) */
+    .mobile-frame {
+      width: 100%;
+      max-width: 440px;
+      height: 100%;
+      background: #f9fafb;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      border: 1px solid #d1d5db;
+      box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.15);
+      z-index: 10;
+      color: #111827;
+      padding-top: env(safe-area-inset-top, 24px);
+    }
+
+    /* Backgrounds and spotlights */
+    .mesh-grid {
+      position: absolute;
+      inset: 0;
+      background-size: 40px 40px;
+      background-image: 
+        linear-gradient(to right, rgba(52, 224, 161, 0.012) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(52, 224, 161, 0.012) 1px, transparent 1px);
+      z-index: 1;
+      pointer-events: none;
+    }
+
+    .spotlight {
+      position: absolute;
+      width: 300px;
+      height: 300px;
+      background: radial-gradient(
+        circle, 
+        rgba(52, 224, 161, 0.05) 0%, 
+        rgba(52, 224, 161, 0.01) 50%, 
+        rgba(0, 0, 0, 0) 70%
+      );
+      filter: blur(40px);
+      z-index: 2;
+      pointer-events: none;
+    }
+
+    .spotlight-1 { top: -100px; right: -100px; }
+    .spotlight-2 { bottom: -100px; left: -100px; }
+
+    /* Main page container (SPA) */
+    .page-container {
+      position: relative;
+      z-index: 10;
+      width: 100%;
+      height: 100%;
+      display: none;
+      flex-direction: column;
+      animation: fadeIn 0.3s ease forwards;
+    }
+
+    .page-container.active {
+      display: flex;
+    }
+
+    .page-container:not(.active) {
+      display: none !important;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: scale(0.99); }
+      to { opacity: 1; transform: scale(1); }
+    }
+
+    /* ==========================================================================
+       Sign In & Auth pages
+       ========================================================================== */
+    .auth-page {
+      justify-content: center;
+      align-items: center;
+      padding: 1rem;
+      height: 100%;
+      overflow: hidden; /* Prevent page scroll since we use viewport fit */
+      display: flex;
+    }
+
+    .card-wrapper {
+      width: 100%;
+      background: var(--color-card-bg);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid var(--color-card-border);
+      border-radius: 24px;
+      padding: 1.25rem 1.25rem;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      max-height: 90%;
+      overflow-y: auto;
+      scrollbar-width: none;
+    }
+    .card-wrapper::-webkit-scrollbar {
+      display: none;
+    }
+
+    .brand-logo {
+      width: 160px;
+      height: auto;
+      margin-bottom: 0.75rem;
+      filter: drop-shadow(0 0 8px rgba(52, 224, 161, 0.2));
+    }
+
+    .logo-container-floating {
+      width: 100%;
+      display: flex;
+      justify-content: center;
+      padding-top: 0.75rem;
+      padding-bottom: 0.25rem;
+      flex-shrink: 0;
+      z-index: 100;
+    }
+
+    .logo-floating {
+      height: 120px;
+      width: auto;
+      filter: drop-shadow(0 0 8px rgba(52, 224, 161, 0.25));
+    }
+
+    .title {
+      font-size: 1.3rem;
+      font-weight: 700;
+      margin-bottom: 1rem;
+      text-align: center;
+      background: linear-gradient(135deg, #FFFFFF 0%, #E0E0E0 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .form-container {
+      width: 100%;
+      display: none;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .form-container.active {
+      display: flex;
+    }
+
+    .input-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.3rem;
+      width: 100%;
+      position: relative;
+    }
+
+    .input-group label {
+      font-size: 0.75rem;
+      font-weight: 500;
+      color: var(--color-text-muted);
+      margin-inline-start: 0.25rem;
+    }
+
+    .input-wrapper-pass {
+      position: relative;
+      width: 100%;
+    }
+
+    .input-field {
+      width: 100%;
+      padding: 0.75rem 1rem;
+      background: var(--color-input-bg);
+      border: 1px solid var(--color-input-border);
+      border-radius: 12px;
+      color: var(--color-text-main);
+      font-family: var(--font-family);
+      font-size: 0.85rem;
+      outline: none;
+      transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    }
+
+    .input-field:focus {
+      border-color: var(--color-primary);
+      background: rgba(255, 255, 255, 0.06);
+      box-shadow: 0 0 0 4px var(--color-primary-glow);
+    }
+
+    /* Password visibility eye styling */
+    .btn-eye-toggle {
+      position: absolute;
+      left: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      color: var(--color-text-muted);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 4px;
+      transition: color 0.2s ease, transform 0.1s ease;
+    }
+    .btn-eye-toggle:hover {
+      color: var(--color-primary);
+    }
+    .btn-eye-toggle:active {
+      transform: translateY(-50%) scale(0.9);
+    }
+
+    /* Validation helpers */
+    .validation-msg {
+      font-size: 0.7rem;
+      color: var(--color-danger);
+      margin-top: 0.2rem;
+      margin-inline-start: 0.25rem;
+      display: none;
+    }
+
+    .pw-requirements {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+      margin-top: 0.4rem;
+      padding: 0.5rem 0.75rem;
+      background: rgba(255, 255, 255, 0.02);
+      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.04);
+    }
+
+    .requirement-item {
+      font-size: 0.7rem;
+      color: var(--color-text-muted);
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      transition: color 0.2s ease;
+    }
+
+    .requirement-item.valid {
+      color: var(--color-primary);
+    }
+
+    .requirement-item svg {
+      width: 10px;
+      height: 10px;
+      stroke: currentColor;
+      stroke-width: 3;
+      fill: none;
+      transition: transform 0.2s ease;
+    }
+
+    .requirement-item.valid svg {
+      transform: scale(1.2);
+    }
+
+    .options-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 100%;
+      font-size: 0.75rem;
+      gap: 0.5rem;
+    }
+
+    .checkbox-container {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      cursor: pointer;
+      color: var(--color-text-muted);
+      user-select: none;
+      transition: color 0.2s ease;
+    }
+    .checkbox-container:hover {
+      color: var(--color-text-main);
+    }
+
+    .checkbox-container input {
+      display: none;
+    }
+
+    .checkmark {
+      width: 18px;
+      height: 18px;
+      border: 1.5px solid var(--color-input-border);
+      border-radius: 4px;
+      position: relative;
+      transition: all 0.2s ease;
+      display: inline-block;
+      flex-shrink: 0;
+    }
+
+    .checkbox-container input:checked + .checkmark {
+      background: var(--color-primary);
+      border-color: var(--color-primary);
+    }
+
+    .checkbox-container input:checked + .checkmark::after {
+      content: '';
+      position: absolute;
+      left: 6px;
+      top: 2px;
+      width: 4px;
+      height: 8px;
+      border: solid #fff;
+      border-width: 0 2px 2px 0;
+      transform: rotate(45deg);
+    }
+
+    .btn-submit {
+      width: 100%;
+      padding: 0.8rem;
+      background: var(--color-primary);
+      color: #000000;
+      border: none;
+      border-radius: 12px;
+      font-family: var(--font-family);
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      box-shadow: 0 4px 15px rgba(52, 224, 161, 0.2);
+      transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1);
+      text-align: center;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+    }
+
+    .btn-submit:hover {
+      transform: translateY(-1.5px);
+      box-shadow: 0 6px 20px rgba(52, 224, 161, 0.35);
+      background: #4ef0b1;
+    }
+
+    .btn-submit:active {
+      transform: translateY(0) scale(0.98);
+      box-shadow: 0 2px 10px rgba(52, 224, 161, 0.15);
+    }
+
+    .divider {
+      display: flex;
+      align-items: center;
+      text-align: center;
+      color: var(--color-text-muted);
+      font-size: 0.7rem;
+      margin: 0.35rem 0;
+      width: 100%;
+    }
+
+    .divider::before, .divider::after {
+      content: '';
+      flex: 1;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .divider:not(:empty)::before { margin-inline-end: 0.5rem; }
+    .divider:not(:empty)::after { margin-inline-start: 0.5rem; }
+
+    .btn-google {
+      width: 100%;
+      padding: 0.75rem;
+      background: transparent;
+      color: var(--color-text-main);
+      border: 1px solid var(--color-input-border);
+      border-radius: 12px;
+      font-family: var(--font-family);
+      font-size: 0.85rem;
+      font-weight: 500;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.6rem;
+      transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1);
+    }
+
+    .btn-google:hover {
+      background: rgba(255, 255, 255, 0.04);
+      border-color: rgba(255, 255, 255, 0.2);
+    }
+
+    .btn-google:active {
+      transform: scale(0.98);
+      background: rgba(255, 255, 255, 0.06);
+    }
+
+    .switch-page-text {
+      font-size: 0.75rem;
+      color: var(--color-text-muted);
+      text-align: center;
+      margin-top: 0.5rem;
+    }
+
+    .switch-page-btn {
+      background: none;
+      border: none;
+      color: var(--color-primary);
+      font-family: var(--font-family);
+      font-size: 0.75rem;
+      font-weight: 600;
+      cursor: pointer;
+      margin-inline-start: 0.25rem;
+      transition: color 0.2s ease;
+    }
+
+    .switch-page-btn:hover {
+      text-decoration: underline;
+      color: #4ef0b1;
+    }
+
+    /* ==========================================================================
+       Home / Navigation bar
+       ========================================================================== */
+    .home-view-container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      width: 100%;
+    }
+
+    .mobile-content {
+      flex: 1;
+      overflow-y: auto;
+      min-height: 0;
+      padding-bottom: calc(75px + env(safe-area-inset-bottom, 0px));
+      scrollbar-width: none;
+    }
+
+    .mobile-content::-webkit-scrollbar {
+      display: none;
+    }
+
+    .sub-screen {
+      display: none;
+      flex-direction: column;
+      width: 100%;
+      padding: 0.5rem 1rem 1.25rem 1rem;
+      animation: fadeIn 0.25s ease;
+    }
+
+    .sub-screen.active {
+      display: flex;
+    }
+
+    /* Feed Posts */
+    .feed-section {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    .post-card {
+      background: var(--color-card-bg);
+      border: 1px solid var(--color-card-border);
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+      display: flex;
+      flex-direction: column;
+      width: auto;
+    }
+
+    .post-header {
+      padding: 0.85rem 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    }
+
+    .author-avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: linear-gradient(45deg, #f9ce34, #ee2a7b, #6228d7);
+      padding: 1.5px;
+    }
+
+    .avatar-inner {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      background: #000;
+      background: #ef4444;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--color-primary);
+      color: #ffffff;
+    }
+
+    .author-info {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .author-name { font-size: 0.8rem; font-weight: 600; }
+    .post-time { font-size: 0.65rem; color: var(--color-text-muted); }
+    .author-name { font-size: 0.85rem; font-weight: 700; color: #ffffff; }
+    .post-time { font-size: 0.65rem; color: #9ca3af; }
+
+    /* Carousel Outer Non-Scrolling Wrapper */
+    /* Carousel Outer Non-Scrolling Wrapper (Palette 18: #1f2937) */
+    .carousel-wrapper {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 1 / 1;
+      background: #08080C;
+      background: #1f2937;
+      overflow: hidden;
+      direction: ltr !important;
+    }
+
+    /* Carousel - Perfect 1:1 square media frame */
+    .carousel-section {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      overflow-x: auto;
+      overflow-y: hidden;
+      scroll-snap-type: x mandatory;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+      scroll-behavior: smooth;
+      -webkit-overflow-scrolling: touch;
+      flex-shrink: 0;
+      direction: ltr !important;
+    }
+    .carousel-section::-webkit-scrollbar {
+      display: none;
+    }
+
+    .carousel-track {
+      display: flex;
+      height: 100%;
+      width: 100%;
+      direction: ltr !important;
+    }
+
+    .carousel-slide {
+      min-width: 100%;
+      height: 100%;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background-size: cover;
+      background-position: center;
+      user-select: none;
+      overflow: hidden;
+      scroll-snap-align: start;
+      scroll-snap-stop: always;
+    }
+
+    .slide-iframe {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 540px !important;
+      height: 540px !important;
+      border: none;
+      transform-origin: 0 0;
+    }
+
+    .slide-overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to bottom, rgba(0,0,0,0.1), rgba(0,0,0,0.85));
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      padding: 2rem 1.5rem;
+      text-align: center;
+    }
+
+    .slide-tag {
+      font-size: 0.75rem;
+      color: var(--color-primary);
+      font-weight: 700;
+      margin-bottom: 0.4rem;
+      letter-spacing: 1px;
+    }
+
+    .slide-title { font-size: 1.4rem; font-weight: 800; color: #FFF; line-height: 1.3; }
+    .slide-index {
+      position: absolute;
+      top: 0.75rem;
+      left: 0.75rem;
+      background: rgba(0, 0, 0, 0.65);
+      backdrop-filter: blur(4px);
+      padding: 0.25rem 0.5rem;
+      border-radius: 12px;
+      font-size: 0.7rem;
+      font-weight: 600;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      color: #fff;
+    }
+
+    .carousel-nav-btn {
+      display: none !important;
+    }
+
+    .carousel-nav-btn:hover { background: var(--color-primary); color: #000; }
+    .carousel-nav-btn:active { transform: translateY(-50%) scale(0.9); }
+    .btn-prev { left: 0.75rem; }
+    .btn-next { right: 0.75rem; }
+
+    /* Carousel Pagination Dots (Palette 18) */
+    .carousel-dots {
+      position: absolute;
+      bottom: 0.85rem;
+      bottom: 12px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 0.4rem;
+      gap: 6px;
+      z-index: 10;
+      pointer-events: none;
+    }
+
+    .dot { width: 8px; height: 8px; border-radius: 50%; background: #d1d5db; cursor: pointer; transition: all 0.2s ease; pointer-events: auto; }
+    .dot.active { background: #ef4444 !important; width: 14px; border-radius: 4px; }
+
+    .post-content { padding: 1rem; display: flex; flex-direction: column; gap: 0.5rem; border-top: 1px solid rgba(255, 255, 255, 0.03); }
+    .post-desc { font-size: 0.85rem; line-height: 1.45; color: #E2E8F0; }
+    .post-hashtags { font-size: 0.8rem; color: var(--color-primary); font-weight: 500; word-break: break-all; line-height: 1.5; }
+    .hashtag-item { display: inline-block; margin-inline-end: 0.5rem; }
+
+    /* Bottom mobile nav bar - 3 modern buttons */
+    .bottom-nav {
+      position: absolute !important;
+      bottom: 0 !important;
+      left: 0 !important;
+      right: 0 !important;
+      width: 100% !important;
+      height: 64px !important;
+      background: #ffffff !important;
+      border: none !important;
+      border-top: 1px solid #e5e7eb !important;
+      border-radius: 0 !important;
+      z-index: 1000 !important;
+      display: flex !important;
+      justify-content: space-around !important;
+      align-items: center !important;
+      padding: 0 16px env(safe-area-inset-bottom, 0px) 16px !important;
+      box-sizing: border-box !important;
+      box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.04) !important;
+    }
+
+    .nav-item {
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      color: #111827 !important;
+      cursor: pointer !important;
+      background: transparent !important;
+      border: none !important;
+      padding: 8px !important;
+      border-radius: 8px !important;
+      width: auto !important;
+      min-width: 44px;
+      outline: none !important;
+      transition: transform 0.2s ease, color 0.2s ease !important;
+    }
+
+    .nav-item svg {
+      width: 28px !important;
+      height: 28px !important;
+      stroke-width: 2.2px !important;
+      stroke: currentColor !important;
+      flex-shrink: 0 !important;
+      transition: transform 0.2s ease, stroke 0.2s ease !important;
+    }
+
+    .nav-item:hover {
+      transform: scale(1.12) !important;
+    }
+
+    .nav-item span {
+      display: none !important;
+    }
+
+    .nav-item.active {
+      color: #ef4444 !important;
+      background: transparent !important;
+    }
+
+    .nav-item.active svg {
+      color: #ef4444 !important;
+      stroke: #ef4444 !important;
+      stroke-width: 2.5px !important;
+      transform: scale(1.08);
+    }
+
+    /* Settings (Settings Screen) */
+    .settings-group {
+      background: var(--brand-white);
+      border: 1px solid var(--color-card-border);
+      border-radius: 20px;
+      padding: 1rem;
+      margin: 1rem;
+      box-shadow: 0 8px 24px rgba(38, 47, 49, 0.03);
+      box-sizing: border-box;
+    }
+
+    .settings-group-title {
+      font-family: 'Outfit', var(--font-family);
+      font-weight: 800;
+      font-size: 1.1rem;
+      margin-bottom: 0.75rem;
+      text-align: right;
+      padding: 0 0.5rem;
+    }
+
+    .setting-item {
+      padding: 0.85rem 0.5rem;
+      border-bottom: 1px solid rgba(38, 47, 49, 0.06);
+    }
+
+    .setting-item:last-child {
+      border-bottom: 0;
+    }
+
+    .btn-settings-link {
+      font-family: var(--font-family);
+      font-size: 0.95rem;
+      color: var(--brand-slate);
+    }
+
+    .btn-upgrade-diamond {
+      background: rgba(217, 19, 82, 0.06);
+      border: 1px solid rgba(217, 19, 82, 0.15);
+      color: var(--brand-ruby);
+      font-weight: 700;
+      border-radius: 20px;
+      padding: 0.6rem 1.2rem;
+    }
+
+    .btn-upgrade-diamond:hover {
+      background: var(--brand-ruby);
+      color: var(--brand-white);
+    }
+
+    .btn-settings-danger {
+      color: #A60F3D;
+      border: 1px solid rgba(217, 19, 82, 0.2);
+      background: transparent;
+      border-radius: 20px;
+      padding: 0.6rem 1.2rem;
+      font-weight: 700;
+    }
+
+    .btn-settings-danger:hover {
+      background: rgba(217, 19, 82, 0.05);
+      border-color: var(--brand-ruby);
+    }
+
+    /* ModelStyle Style */
+    .modal-content {
+      background: var(--brand-white);
+      border-radius: 24px;
+      border: 1px solid var(--color-card-border);
+      box-shadow: 0 20px 48px rgba(0, 0, 0, 0.15);
+    }
+
+    .time-picker-selection-overlay {
+      border-top: 1.5px solid var(--brand-ruby);
+      border-bottom: 1.5px solid var(--brand-ruby);
+      background: rgba(217, 19, 82, 0.04);
+    }
+
+    .custom-alert-box {
+      background: var(--brand-white);
+      border-radius: 24px;
+      border: 1px solid var(--color-card-border);
+    }
+
+    .btn-alert {
+      border-radius: 20px;
+      padding: 0.65rem 1.5rem;
+    }
+
+    .btn-alert.confirm {
+      background: var(--brand-ruby);
+      color: var(--brand-white);
+    }
+
+    .btn-alert.cancel {
+      background: var(--brand-canvas);
+      color: var(--brand-slate);
+    }
+
+    .skeleton {
+      background: linear-gradient(90deg, #E2E4E5 25%, #F0F2F3 50%, #E2E4E5 75%);
+      background-size: 200% 100%;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+
+    /* Style Style Style of 8 Style Style Style StyleImage */
+    .auth-page .card-wrapper {
+      background: #FFFFFF !important;
+      border: 1px solid rgba(38, 47, 49, 0.08) !important;
+      border-radius: 16px !important;
+      padding: 32px 24px !important;
+      box-shadow: 0 16px 40px rgba(38, 47, 49, 0.06) !important;
+      display: flex !important;
+      flex-direction: column !important;
+      align-items: stretch !important;
+      text-align: left !important;
+      width: 100% !important;
+      box-sizing: border-box !important;
+      max-width: 380px !important;
+    }
+    
+    .auth-page .form-container {
+      display: none;
+      flex-direction: column !important;
+      gap: 16px !important;
+      width: 100% !important;
+    }
+    
+    .auth-page .form-container.active {
+      display: flex !important;
+    }
+    
+    .auth-page .input-group {
+      display: flex !important;
+      flex-direction: column !important;
+      align-items: stretch !important;
+      margin-bottom: 16px !important;
+      width: 100% !important;
+    }
+    
+    .auth-page .input-group label {
+      font-family: var(--font-family) !important;
+      font-size: 14px !important;
+      font-weight: 500 !important;
+      color: #e0809b !important;
+      margin-bottom: 8px !important;
+      text-align: left !important;
+      direction: ltr !important;
+    }
+    
+    .auth-page .input-field {
+      width: 100% !important;
+      background: transparent !important;
+      border: 0 !important;
+      border-bottom: 2px solid #e0809b !important;
+      border-radius: 0 !important;
+      color: #262F31 !important;
+      font-size: 15px !important;
+      padding: 8px 0 !important;
+      box-sizing: border-box !important;
+      transition: border-color 0.2s ease !important;
+      direction: ltr !important;
+      text-align: left !important;
+    }
+    
+    .auth-page .input-field::placeholder {
+      color: #e0809b !important;
+      opacity: 0.7 !important;
+    }
+    
+    .auth-page .input-field:focus {
+      border-bottom-color: #D91352 !important;
+      outline: none !important;
+      box-shadow: none !important;
+    }
+    
+    .auth-page .input-wrapper-pass {
+      position: relative !important;
+      width: 100% !important;
+      display: flex !important;
+      align-items: center !important;
+    }
+    
+    .auth-page .btn-eye-toggle {
+      position: absolute !important;
+      right: 0px !important;
+      left: auto !important;
+      background: transparent !important;
+      border: 0 !important;
+      color: #e0809b !important;
+      cursor: pointer !important;
+      display: flex !important;
+      align-items: center !important;
+      padding: 8px !important;
+      z-index: 10 !important;
+    }
+    
+    .auth-page .btn-submit {
+      width: auto !important;
+      min-width: 130px !important;
+      background: #D91352 !important;
+      color: #FFFFFF !important;
+      border: 0 !important;
+      border-radius: 20px !important;
+      font-size: 15px !important;
+      font-weight: 700 !important;
+      padding: 10px 24px !important;
+      cursor: pointer !important;
+      box-shadow: 0 4px 12px rgba(217, 19, 82, 0.2) !important;
+      transition: all 0.2s ease !important;
+      margin: 8px auto 0 !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      gap: 8px !important;
+    }
+    
+    .auth-page .btn-submit:hover {
+      background: #B80F43 !important;
+      box-shadow: 0 6px 16px rgba(217, 19, 82, 0.3) !important;
+    }
+    
+    .auth-page .divider-custom {
+      text-align: center !important;
+      font-size: 13px !important;
+      color: #D91352 !important;
+      margin: 8px 0 !important;
+      font-weight: 700 !important;
+    }
+    
+    .auth-page .btn-google-custom {
+      display: inline-flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      background-color: #ffffff !important;
+      border: 1px solid #747775 !important;
+      border-radius: 4px !important;
+      box-sizing: border-box !important;
+      color: #1f1f1f !important;
+      cursor: pointer !important;
+      font-family: "Roboto", "Helvetica Neue", Arial, sans-serif !important;
+      font-size: 14px !important;
+      font-weight: 500 !important;
+      height: 40px !important;
+      padding: 0 12px !important;
+      position: relative !important;
+      text-align: center !important;
+      transition: background-color 0.218s, border-color 0.218s !important;
+      width: auto !important;
+      min-width: 200px !important;
+      margin: 8px auto 0 !important;
+      gap: 12px !important;
+    }
+    
+    .auth-page .btn-google-custom:hover {
+      background-color: #f8fafd !important;
+      border-color: #8e918f !important;
+    }
+    
+    .auth-page .btn-google-custom:active {
+      background-color: #eeeeee !important;
+    }
+    
+    .auth-page .switch-page-text-custom {
+      text-align: center !important;
+      font-size: 13px !important;
+      color: #262F31 !important;
+      margin-top: 24px !important;
+      font-family: var(--font-family) !important;
+    }
+    
+    .auth-page .switch-page-btn-custom {
+      background: none !important;
+      border: none !important;
+      color: #D91352 !important;
+      font-weight: 900 !important;
+      cursor: pointer !important;
+      padding: 0 !important;
+      font-size: 13px !important;
+      margin-inline-start: 4px !important;
+    }
+    
+    .auth-page .checkbox-container {
+      display: flex !important;
+      align-items: center !important;
+      gap: 8px !important;
+      font-size: 13px !important;
+      color: #7A8487 !important;
+      cursor: pointer !important;
+      user-select: none !important;
+      margin-top: 8px !important;
+      direction: ltr !important;
+      justify-content: flex-start !important;
+      text-align: left !important;
+    }
+    
+    .auth-page .checkbox-container input {
+      width: 16px !important;
+      height: 16px !important;
+      accent-color: #D91352 !important;
+      border: 1.5px solid #e0809b !important;
+      border-radius: 4px !important;
+    }
+    
+    .auth-page .pw-requirements {
+      margin-top: 8px !important;
+      display: none !important;
+      flex-direction: column !important;
+      gap: 4px !important;
+      text-align: left !important;
+    }
+    
+    .auth-page .input-wrapper-pass:focus-within ~ .pw-requirements {
+      display: flex !important;
+    }
+    
+    .auth-page .requirement-item {
+      font-size: 11px !important;
+      color: #7A8487 !important;
+      display: flex !important;
+      align-items: center !important;
+      gap: 6px !important;
+      direction: ltr !important;
+    }
+    
+    .auth-page .requirement-item svg {
+      width: 12px !important;
+      height: 12px !important;
+      stroke: #7A8487 !important;
+    }
+    
+    .auth-page .requirement-item.valid {
+      color: #34A853 !important;
+    }
+    
+    .auth-page .requirement-item.valid svg {
+      stroke: #34A853 !important;
+    }
+    
+    .auth-page .validation-msg {
+      font-size: 11px !important;
+      color: #D91352 !important;
+      margin-top: 4px !important;
+      text-align: left !important;
+      display: none;
+      direction: ltr !important;
+    }
+
+    /* Custom premium scrollbar styles (auto-hiding, thin, scroll-only) */
+    * {
+      scrollbar-width: thin;
+      scrollbar-color: transparent transparent;
+      transition: scrollbar-color 0.3s ease;
+    }
+    *:hover {
+      scrollbar-color: rgba(38, 47, 49, 0.2) transparent;
+    }
+    ::-webkit-scrollbar {
+      width: 5px;
+      height: 5px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: transparent;
+      border-radius: 10px;
+      transition: background 0.3s ease;
+    }
+    *:hover::-webkit-scrollbar-thumb {
+      background: rgba(38, 47, 49, 0.2);
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(38, 47, 49, 0.4) !important;
+    }
+
+    .btn-download-carousel:hover, .btn-chat-link:hover, .btn-delete-carousel:hover {
+      background: rgba(38, 47, 49, 0.08) !important;
+      color: var(--brand-ruby) !important;
+    }
+    
+    @keyframes rotate {
+      100% { transform: rotate(360deg); }
+    }
+    @keyframes dash {
+      0% { stroke-dasharray: 1, 150; stroke-dashoffset: 0; }
+      50% { stroke-dasharray: 90, 150; stroke-dashoffset: -35; }
+      100% { stroke-dasharray: 90, 150; stroke-dashoffset: -124; }
+    }
+  </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+</head>
+<body>
+  <div class="mobile-frame">
+    <div class="mesh-grid"></div>
+    <div class="spotlight spotlight-1"></div>
+    <div class="spotlight spotlight-2"></div>
+    
+    <div id="home-page" class="page-container active">
+      
+      <!-- Notifications Dropdown Overlay (Palette 18, positioned above bottom nav) -->
+      <div id="notifications-dropdown" class="notifications-dropdown" style="display: none; position: absolute; bottom: 74px; right: 16px; width: 280px; max-width: calc(100% - 32px); background: #ffffff; border: 1px solid #e5e7eb; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.08); z-index: 1100; box-sizing: border-box; padding: 8px 0; font-family: var(--font-family);">
+        <div style="padding: 8px 16px; border-bottom: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center; box-sizing: border-box;">
+          <span style="font-weight: 700; font-size: 13px; color: #111827;">Notifications</span>
+          <button onclick="clearNotifications()" style="background: none; border: none; color: #ef4444; font-size: 11px; font-weight: 700; cursor: pointer; padding: 0;">Clear All</button>
+        </div>
+        <div id="notifications-list" style="max-height: 240px; overflow-y: auto; box-sizing: border-box;">
+          <div class="notification-item" style="padding: 10px 16px; border-bottom: 1px solid #f3f4f6; display: flex; flex-direction: column; gap: 4px; text-align: left; box-sizing: border-box;">
+            <div style="display: flex; align-items: center; gap: 6px; font-size: 11.5px; font-weight: 700; color: #ef4444;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0; margin-right:4px;"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg><span>Security Alert</span>
+            </div>
+            <div style="font-size: 11px; color: #6b7280; line-height: 1.3;">New login detected.</div>
+            <div style="font-size: 9px; color: #9ca3af;">Just now</div>
+          </div>
+          <div class="notification-item" style="padding: 10px 16px; border-bottom: 1px solid #f3f4f6; display: flex; flex-direction: column; gap: 4px; text-align: left; box-sizing: border-box;">
+            <div style="display: flex; align-items: center; gap: 6px; font-size: 11.5px; font-weight: 700; color: #ef4444;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0; margin-right:4px;"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg><span>System Update</span>
+            </div>
+            <div style="font-size: 11px; color: #6b7280; line-height: 1.3;">Minimalist Light Design is live!</div>
+            <div style="font-size: 9px; color: #9ca3af;">10 mins ago</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- User Tab Floating Mini Menu (Palette 18, positioned above bottom nav) -->
+      <div id="user-mini-menu" class="user-mini-menu" style="display: none; position: absolute; bottom: 74px; right: 16px; width: 180px; background: #ffffff; border: 1px solid #e5e7eb; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.08); z-index: 1100; box-sizing: border-box; padding: 6px 0; font-family: var(--font-family);">
+        <button onclick="location.href='profile.html'" style="width: 100%; padding: 10px 16px; background: none; border: none; font-size: 13px; font-weight: 600; color: #111827; display: flex; align-items: center; gap: 8px; cursor: pointer; text-align: left; font-family: inherit;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+          <span>Profile</span>
+        </button>
+        <button onclick="location.href='settings.html'" style="width: 100%; padding: 10px 16px; background: none; border: none; font-size: 13px; font-weight: 600; color: #111827; display: flex; align-items: center; gap: 8px; cursor: pointer; text-align: left; font-family: inherit;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+          <span>Settings</span>
+        </button>
+        <button onclick="location.href='support.html'" style="width: 100%; padding: 10px 16px; background: none; border: none; font-size: 13px; font-weight: 600; color: #111827; display: flex; align-items: center; gap: 8px; cursor: pointer; text-align: left; font-family: inherit;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+          <span>Support</span>
+        </button>
+        <button onclick="location.href='legal.html'" style="width: 100%; padding: 10px 16px; background: none; border: none; font-size: 13px; font-weight: 600; color: #111827; display: flex; align-items: center; gap: 8px; cursor: pointer; text-align: left; font-family: inherit;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+          <span>Legal Info</span>
+        </button>
+        <button id="admin-nav-btn" onclick="location.href='admin.html'" style="display: none; width: 100%; padding: 10px 16px; background: none; border: none; font-size: 13px; font-weight: 600; color: #111827; align-items: center; gap: 8px; cursor: pointer; text-align: left; font-family: inherit;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="9" y1="3" x2="9" y2="21"></line></svg>
+          <span>Admin Panel</span>
+        </button>
+        <div style="height: 1px; background: #e5e7eb; margin: 4px 0;"></div>
+        <button onclick="logout()" style="width: 100%; padding: 10px 16px; background: none; border: none; font-size: 13px; font-weight: 600; color: #ef4444; display: flex; align-items: center; gap: 8px; cursor: pointer; text-align: left; font-family: inherit;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+          <span>Logout</span>
+        </button>
+      </div>
+    
+      <div class="mobile-content" style="padding-bottom: 74px;">
+        <div id="feed-screen" class="sub-screen active" style="padding: 0;">
+          <!-- Top Nav (Yours / Community) matching karu_ai_full_app_palette_18.html -->
+          <div class="feed-tabs" style="display: flex; justify-content: center; align-items: center; gap: 40px; padding: 20px 16px 14px 16px; flex-shrink: 0; position: relative;">
+            <!-- Magnifying Glass Toggle Button at Top-Left -->
+            <button id="btn-toggle-search" onclick="toggleSearchHeader(event)" style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); background: none; border: none; color: #111827; cursor: pointer; padding: 6px; display: flex; align-items: center; justify-content: center; transition: color 0.2s;" title="Search">
+              <svg class="icon-heavy" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="11" cy="11" r="8"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+              </svg>
+            </button>
+            <div id="feed-tab-yours-container" style="position: relative; display: flex; flex-direction: column; align-items: center;">
+              <span id="feed-tab-yours" onclick="switchFeedTab('yours')" style="font-size: 15px; font-weight: 700; color: #111827; cursor: pointer; transition: color 0.2s; padding-bottom: 6px;">Feed</span>
+              <div id="feed-tab-yours-indicator" style="width: 32px; height: 2.5px; background: #111827; border-radius: 2px;"></div>
+            </div>
+            <div id="feed-tab-community-container" style="position: relative; display: flex; flex-direction: column; align-items: center;">
+              <span id="feed-tab-community" onclick="switchFeedTab('community')" style="font-size: 15px; font-weight: 500; color: #9ca3af; cursor: pointer; transition: color 0.2s; padding-bottom: 6px;">Community</span>
+              <div id="feed-tab-community-indicator" style="width: 32px; height: 2.5px; background: transparent; border-radius: 2px;"></div>
+            </div>
+          </div>
+
+          <!-- Search & Filter Area (Palette 18) -->
+          <div class="search-filter-row" id="search-filter-row" style="display: none; gap: 10px; padding: 4px 16px 12px 16px; position: relative;">
+            <div class="search-input-wrapper" style="flex: 1; position: relative; display: flex; align-items: center;">
+              <svg class="search-icon-svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="position: absolute; right: 12px; z-index: 10;">
+                <circle cx="11" cy="11" r="8"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+              </svg>
+              <input type="text" id="search-input" oninput="handleSearchInput()" placeholder="Search..." style="width: 100%; height: 38px; background: #ffffff; border: 1px solid #e5e7eb; border-radius: 8px; padding: 0 12px; padding-right: 36px; font-size: 13px; color: #111827; font-family: var(--font-family); outline: none; direction: ltr; text-align: left; box-shadow: 0 2px 6px rgba(0,0,0,0.03);">
+            </div>
+            <button class="btn-filter-custom" onclick="event.stopPropagation(); toggleSortMenu()" style="width: 38px; height: 38px; background: #ef4444; border: none; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #fff; cursor: pointer; flex-shrink: 0; transition: background 0.2s;" title="Sort">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
+              </svg>
+            </button>
+            
+            <!-- Floating Sort Dropdown Menu -->
+            <div id="sort-dropdown-menu" style="display: none; position: absolute; top: 48px; right: 16px; width: 150px; background: #ffffff; border: 1px solid #e5e7eb; border-radius: 10px; box-shadow: 0 10px 25px rgba(0,0,0,0.08); z-index: 1000; box-sizing: border-box; padding: 6px 0; font-family: var(--font-family);">
+              <button onclick="setSortOrder('latest')" style="width: 100%; padding: 8px 16px; background: none; border: none; font-size: 12px; font-weight: 600; color: #111827; display: flex; align-items: center; gap: 8px; cursor: pointer; text-align: left; font-family: inherit;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg> Latest</button>
+              <button onclick="setSortOrder('earliest')" style="width: 100%; padding: 8px 16px; background: none; border: none; font-size: 12px; font-weight: 600; color: #111827; display: flex; align-items: center; gap: 8px; cursor: pointer; text-align: left; font-family: inherit;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg> Earliest</button>
+              <button onclick="setSortOrder('tokens')" style="width: 100%; padding: 8px 16px; background: none; border: none; font-size: 12px; font-weight: 600; color: #111827; display: flex; align-items: center; gap: 8px; cursor: pointer; text-align: left; font-family: inherit;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg> Tokens</button>
+            </div>
+          </div>
+
+          <div class="feed-section" id="feed-posts-container">
+            <!-- Posts will be rendered here dynamically -->
+            <div style="text-align: center; padding: 40px; color: #9ca3af;">
+              <p>Loading Carousels...</p>
+            </div>
+          </div>
+
+          <div class="feed-section" id="community-posts-feed-container" style="display: none; flex-direction: column; gap: 14px;">
+            <!-- Community shared posts -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Bottom Navigation Bar (Persistent, Touching Bottom Edge) -->
+      <nav class="bottom-nav">
+        <!-- Home Icon -->
+        <button class="nav-item active" id="btn-tab-feed" onclick="location.href='feed.html';" title="Home">
+          <svg class="icon-heavy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+            <polyline points="9 22 9 12 15 12 15 22"></polyline>
+          </svg>
+          <span class="lang-translatable">Home</span>
+        </button>
+        <!-- Chat Icon -->
+        <button class="nav-item" id="btn-tab-chat" onclick="location.href='chat.html';" title="Chat">
+          <svg class="icon-heavy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path>
+          </svg>
+          <span class="lang-translatable">Chat</span>
+        </button>
+        <!-- Bell / Notifications Icon -->
+        <button class="nav-item" id="btn-tab-notifications" onclick="toggleNotificationsDropdown(event);" title="Notifications">
+          <svg class="icon-heavy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+            <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+          </svg>
+        </button>
+        <!-- Profile Icon -->
+        <button class="nav-item" id="btn-tab-settings" onclick="toggleUserMiniMenu(this, event)" title="Profile">
+          <svg class="icon-heavy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+            <circle cx="12" cy="7" r="4"></circle>
+          </svg>
+          <span class="lang-translatable">Profile</span>
+        </button>
+      </nav>
+    </div>
+  </div>
+
+  <script>
+    // Custom Modal Popup Utility
+    function showModalPopup(title, message) {
+      let modal = document.getElementById('custom-alert-modal');
+      if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'custom-alert-modal';
+        modal.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;z-index:99999;font-family:var(--font-family);padding:20px;box-sizing:border-box;';
+        const content = document.createElement('div');
+        content.style.cssText = 'background:#1f2937;border:1px solid #374151;padding:24px;border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,0.5);width:340px;max-width:100%;text-align:center;';
+        const titleEl = document.createElement('h3');
+        titleEl.id = 'custom-alert-title';
+        titleEl.style.cssText = 'margin:0 0 10px 0;font-size:18px;color:#ffffff;font-weight:700;';
+        const messageEl = document.createElement('p');
+        messageEl.id = 'custom-alert-message';
+        messageEl.style.cssText = 'margin:0 0 20px 0;font-size:14px;color:#9ca3af;line-height:1.5;word-break:break-word;';
+        const btn = document.createElement('button');
+        btn.textContent = 'OK';
+        btn.style.cssText = 'background:#ef4444;color:#ffffff;border:none;padding:10px 28px;border-radius:8px;font-weight:700;cursor:pointer;font-size:14px;';
+        btn.onclick = () => { modal.style.display = 'none'; };
+        content.appendChild(titleEl);
+        content.appendChild(messageEl);
+        content.appendChild(btn);
+        modal.appendChild(content);
+        document.body.appendChild(modal);
+      }
+      document.getElementById('custom-alert-title').textContent = title;
+      document.getElementById('custom-alert-message').textContent = message;
+      modal.style.display = 'flex';
+    }
+
+    
+    function toggleSearchHeader(e) {
+      if (e) e.stopPropagation();
+      const searchRow = document.getElementById("search-filter-row");
+      const searchBtn = document.getElementById("btn-toggle-search");
+      if (!searchRow) return;
+      const isHidden = searchRow.style.display === "none" || !searchRow.style.display;
+      if (isHidden) {
+        searchRow.style.display = "flex";
+        if (searchBtn) searchBtn.style.color = "#ef4444";
+        const input = document.getElementById("search-input");
+        if (input) input.focus();
+      } else {
+        searchRow.style.display = "none";
+        if (searchBtn) searchBtn.style.color = "#111827";
+        const sortMenu = document.getElementById("sort-dropdown-menu");
+        if (sortMenu) sortMenu.style.display = "none";
+      }
+    }
+
+    function toggleNotificationsDropdown(e) {
+      if (e) e.stopPropagation();
+      const dropdown = document.getElementById('notifications-dropdown');
+      if (!dropdown) return;
+      dropdown.style.display = dropdown.style.display === 'none' || !dropdown.style.display ? 'block' : 'none';
+      const userMenu = document.getElementById('user-mini-menu');
+      if (userMenu) userMenu.style.display = 'none';
+      const sortMenu = document.getElementById('sort-dropdown-menu');
+      if (sortMenu) sortMenu.style.display = 'none';
+    }
+
+    function toggleUserMiniMenu(btn, e) {
+      if (e) e.stopPropagation();
+      const menu = document.getElementById('user-mini-menu');
+      if (!menu) return;
+      const isHidden = menu.style.display === 'none' || !menu.style.display;
+      
+      const navItems = document.querySelectorAll('.nav-item');
+      navItems.forEach(item => item.classList.remove('active'));
+
+      if (isHidden) {
+        menu.style.display = 'block';
+        if (btn) btn.classList.add('active');
+        const dropdown = document.getElementById('notifications-dropdown');
+        if (dropdown) dropdown.style.display = 'none';
+      } else {
+        menu.style.display = 'none';
+        const feedBtn = document.getElementById('btn-tab-feed');
+        if (feedBtn) feedBtn.classList.add('active');
+      }
+    }
+
+    function clearNotifications() {
+      const list = document.getElementById('notifications-list');
+      if (list) {
+        list.innerHTML = '<div style="text-align: center; padding: 20px; color: #9ca3af; font-size: 11px;">No new notifications</div>';
+      }
+    }
+
+    window.addEventListener('click', (event) => {
+      const dropdown = document.getElementById('notifications-dropdown');
+      const userMenu = document.getElementById('user-mini-menu');
+      const sortMenu = document.getElementById('sort-dropdown-menu');
+      
+      const notifBtn = document.getElementById('btn-tab-notifications');
+      const profileBtn = document.getElementById('btn-tab-settings');
+      const filterBtn = document.querySelector('.btn-filter-custom');
+
+      if (dropdown && dropdown.style.display === 'block') {
+        if (!event.target.closest('#btn-tab-notifications') && !event.target.closest('#notifications-dropdown')) {
+          dropdown.style.display = 'none';
+        }
+      }
+      if (userMenu && userMenu.style.display === 'block') {
+        if (!event.target.closest('#btn-tab-settings') && !event.target.closest('#user-mini-menu')) {
+          userMenu.style.display = 'none';
+          const feedBtn = document.getElementById('btn-tab-feed');
+          if (feedBtn) feedBtn.classList.add('active');
+          if (profileBtn) profileBtn.classList.remove('active');
+        }
+      }
+      if (sortMenu && sortMenu.style.display === 'block') {
+        if (!event.target.closest('.btn-filter-custom') && !event.target.closest('#sort-dropdown-menu')) {
+          sortMenu.style.display = 'none';
+        }
+      }
+    });
+
+    function toggleSortMenu(e) {
+      if (e) e.stopPropagation();
+      const menu = document.getElementById('sort-dropdown-menu');
+      if (menu) {
+        menu.style.display = menu.style.display === 'none' || !menu.style.display ? 'block' : 'none';
+      }
+    }
+
+    let currentFeedTab = 'yours';
+
+    function switchFeedTab(tab) {
+      currentFeedTab = tab;
+      const yoursTab = document.getElementById('feed-tab-yours');
+      const communityTab = document.getElementById('feed-tab-community');
+      const yoursInd = document.getElementById('feed-tab-yours-indicator');
+      const communityInd = document.getElementById('feed-tab-community-indicator');
+      
+      const yoursFeed = document.getElementById('feed-posts-container');
+      const communityFeed = document.getElementById('community-posts-feed-container');
+      const viralFeed = document.getElementById('viral-posts-feed-container');
+
+      if (yoursTab && communityTab) {
+        if (tab === 'yours') {
+          yoursTab.style.color = '#111827';
+          yoursTab.style.fontWeight = '700';
+          if (yoursInd) yoursInd.style.background = '#111827';
+          communityTab.style.color = '#9ca3af';
+          communityTab.style.fontWeight = '500';
+          if (communityInd) communityInd.style.background = 'transparent';
+        } else {
+          communityTab.style.color = '#111827';
+          communityTab.style.fontWeight = '700';
+          if (communityInd) communityInd.style.background = '#111827';
+          yoursTab.style.color = '#9ca3af';
+          yoursTab.style.fontWeight = '500';
+          if (yoursInd) yoursInd.style.background = 'transparent';
+        }
+      }
+
+      if (yoursFeed) yoursFeed.style.display = 'none';
+      if (communityFeed) communityFeed.style.display = 'none';
+      if (viralFeed) viralFeed.style.display = 'none';
+
+      if (tab === 'yours') {
+        if (yoursFeed) yoursFeed.style.display = 'flex';
+      } else if (tab === 'community') {
+        if (communityFeed) communityFeed.style.display = 'flex';
+        if (viralFeed) viralFeed.style.display = 'flex';
+        fetchCommunityPosts();
+      }
+    }
+
+    let allPosts = [];
+    let communityPosts = [];
+    let currentSortOrder = 'latest';
+    let currentSearchQuery = '';
+
+    function setSortOrder(order) {
+      currentSortOrder = order;
+      const menu = document.getElementById('sort-dropdown-menu');
+      if (menu) menu.style.display = 'none';
+      renderFilteredAndSortedPosts();
+    }
+
+    function handleSearchInput() {
+      const input = document.getElementById('search-input');
+      currentSearchQuery = input ? input.value.toLowerCase().trim() : '';
+      renderFilteredAndSortedPosts();
+    }
+
+    function renderFilteredAndSortedPosts() {
+      if (currentFeedTab === 'community') {
+        let cPosts = [...communityPosts];
+        if (currentSearchQuery) {
+          cPosts = cPosts.filter(post => {
+            const title = (post.title || '').toLowerCase();
+            const desc = (post.description || '').toLowerCase();
+            const tags = (post.hashtags || '').toLowerCase();
+            const author = (post.username || '').toLowerCase();
+            return title.includes(currentSearchQuery) || desc.includes(currentSearchQuery) || tags.includes(currentSearchQuery) || author.includes(currentSearchQuery);
+          });
+        }
+        if (currentSortOrder === 'latest') {
+          cPosts.sort((a, b) => new Date(b.created_at || b.date) - new Date(a.created_at || a.date));
+        } else if (currentSortOrder === 'earliest') {
+          cPosts.sort((a, b) => new Date(a.created_at || a.date) - new Date(b.created_at || b.date));
+        } else if (currentSortOrder === 'tokens') {
+          cPosts.sort((a, b) => {
+            const tokensA = (a.tokens?.prompt || 0) + (a.tokens?.save || 0) + (a.tokens?.autopost || 0) || (a.tokens_cost || 0);
+            const tokensB = (b.tokens?.prompt || 0) + (b.tokens?.save || 0) + (b.tokens?.autopost || 0) || (b.tokens_cost || 0);
+            return tokensB - tokensA;
+          });
+        }
+        renderCommunityPostsList(cPosts);
+        setTimeout(adjustIframeScale, 50);
+        return;
+      }
+
+      let posts = [...allPosts];
+      
+      if (currentSearchQuery) {
+        posts = posts.filter(post => {
+          const title = (post.title || '').toLowerCase();
+          const desc = (post.description || '').toLowerCase();
+          const tags = (post.hashtags || '').toLowerCase();
+          return title.includes(currentSearchQuery) || desc.includes(currentSearchQuery) || tags.includes(currentSearchQuery);
+        });
+      }
+      
+      if (currentSortOrder === 'latest') {
+        posts.sort((a, b) => new Date(b.created_at || b.date) - new Date(a.created_at || a.date));
+      } else if (currentSortOrder === 'earliest') {
+        posts.sort((a, b) => new Date(a.created_at || a.date) - new Date(b.created_at || b.date));
+      } else if (currentSortOrder === 'tokens') {
+        posts.sort((a, b) => {
+          const tokensA = (a.tokens?.prompt || 0) + (a.tokens?.save || 0) + (a.tokens?.autopost || 0) || (a.tokens_cost || 0);
+          const tokensB = (b.tokens?.prompt || 0) + (b.tokens?.save || 0) + (b.tokens?.autopost || 0) || (b.tokens_cost || 0);
+          return tokensB - tokensA;
+        });
+      }
+      
+      renderFeedPosts(posts);
+      setTimeout(adjustIframeScale, 50);
+    }
+
+    function renderViralSuggestions() {
+      const container = document.getElementById('viral-suggestions-feed-list');
+      if (!container) return;
+    function renderViralSuggestions() {}
+
+      const suggestions = [
+        {
+          id: "viral-1",
+          username: "@css_wizard",
+          date: "Trending",
+          title: "10 CSS Tricks that look like JavaScript magic",
+          desc: "Unbelievable layout patterns, hover micro-interactions, and complex visual effects done entirely with CSS custom properties.",
+          views: "45.2K",
+          likes: "3.1K",
+          prompt: "Create a carousel about 10 CSS Tricks that look like JavaScript magic",
+          slides: [
+            {
+              background_style: "linear-gradient(135deg, #0f172a 0%, #1e293b 100%)",
+              html_content: `
+                <div style="padding: 40px; color: #fff; font-family: 'Outfit', sans-serif; display: flex; flex-direction: column; justify-content: center; height: 100%; box-sizing: border-box;">
+                  <span style="color: #38bdf8; font-size: 14px; font-weight: 800; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 12px;">Modern Frontend</span>
+                  <h1 style="font-size: 32px; font-weight: 900; line-height: 1.15; margin: 0 0 20px 0;">10 CSS Tricks<br/>That Look Like<br/><span style="color: #38bdf8;">JS Magic</span></h1>
+                  <p style="font-size: 15px; color: #94a3b8; margin: 0; line-height: 1.5;">Unbelievable UI patterns done entirely with pure CSS custom properties.</p>
+                </div>
+              `
+            },
+            {
+              background_style: "linear-gradient(135deg, #1e293b 0%, #0f172a 100%)",
+              html_content: `
+                <div style="padding: 40px; color: #fff; font-family: 'Outfit', sans-serif; display: flex; flex-direction: column; justify-content: center; height: 100%; box-sizing: border-box;">
+                  <span style="color: #38bdf8; font-size: 14px; font-weight: 800; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 12px;">Trick #1: Scroll-Driven</span>
+                  <h2 style="font-size: 26px; font-weight: 800; margin: 0 0 16px 0;">Scroll-Driven Animations</h2>
+                  <p style="font-size: 14px; color: #94a3b8; margin: 0; line-height: 1.5;">Animate elements based on scroll container progress. No heavy scroll library required.</p>
+                </div>
+              `
+            }
+          ]
+        }
+      ];
+
+      container.innerHTML = suggestions.map(s => {
+        return `
+          <div class="post-card post-open-composition" id="post-${s.id}" style="background: transparent; border: none; border-bottom: 1px solid #1f2937; border-radius: 0; margin: 0 0 28px 0; overflow: hidden; box-shadow: none; width: 100%;">
+            <div class="post-header" style="display: flex; justify-content: space-between; align-items: center; direction: ltr; padding: 12px 16px; background: #111827; border-bottom: 1px solid #1f2937;">
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <div style="width: 34px; height: 34px; border-radius: 50%; background: #38bdf8; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 13px; color: #ffffff; flex-shrink: 0; overflow: hidden; border: 1.5px solid rgba(255,255,255,0.15);">
+                  CW
+                </div>
+                <div style="display: flex; flex-direction: column; text-align: left;">
+                  <span style="font-size: 13px; font-weight: 700; color: #ffffff; line-height: 1.2;">${s.username}</span>
+                  <span style="font-size: 10px; color: #9ca3af; line-height: 1.2;">${s.date}</span>
+                </div>
+              </div>
+              <div style="display: flex; gap: 10px; font-size: 11px; color: #9ca3af; font-weight: 500; align-items: center;">
+                <span>${s.views} views</span>
+                <span style="color: #ef4444;">${s.likes} likes</span>
+              </div>
+            </div>
+
+            <div class="carousel-wrapper">
+              <div class="carousel-section" data-current-slide="0" data-total-slides="${s.slides.length}" onscroll="handleCarouselScroll(event)">
+                <div class="carousel-track">
+                  ${s.slides.map((slide, slideIdx) => `
+                    <div class="carousel-slide">
+                      <iframe class="slide-iframe" onload="adjustIframeScale()" sandbox="allow-same-origin allow-scripts" style="background: ${sanitizeBackgroundStyle(slide.background_style)}" srcdoc="
+                        <!DOCTYPE html>
+                        <html>
+                        <head>
+                          <meta charset='utf-8'>
+                          <style>
+                            html, body {
+                              margin: 0;
+                              padding: 0;
+                              width: 100%;
+                              height: 100%;
+                              overflow: hidden;
+                              background: transparent;
+                            }
+                          </style>
+                        </head>
+                        <body>
+                          ${slide.html_content.replace(/"/g, '&quot;').replace(/'/g, '&#39;')}
+                        </body>
+                        </html>
+                      "></iframe>
+                      <div class="slide-index">${slideIdx + 1}/${s.slides.length}</div>
+                    </div>
+                  `).join('')}
+                </div>
+              </div>
+
+              <div class="carousel-dots">
+                ${s.slides.map((_, idx) => `
+                  <span class="dot ${idx === 0 ? 'active' : ''}" onclick="jumpToSlide(this, ${idx})"></span>
+                `).join('')}
+              </div>
+            </div>
+
+            <div style="padding: 16px 16px 12px 16px; border-top: 1px solid #374151; background: #111827; text-align: left;">
+              <h4 style="margin: 0 0 6px 0; font-size: 14px; font-weight: 800; color: #ffffff; line-height: 1.3;">${s.title}</h4>
+              <p style="margin: 0 0 12px 0; font-size: 11px; color: #9ca3af; line-height: 1.45;">${s.desc}</p>
+              <button onclick="duplicateViralPost('${s.prompt.replace(/'/g, "\\'")}')" style="background: #ef4444; color: #FFF; border: none; border-radius: 8px; height: 36px; font-size: 12px; font-weight: 700; cursor: pointer; transition: background 0.2s; width: 100%; display: flex; align-items: center; justify-content: center; gap: 6px;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                  <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                </svg>
+                Duplicate to Recreate
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function duplicateViralPost(prompt) {
+      localStorage.setItem('prefilledPrompt', prompt);
+      location.href = 'chat.html';
+    }
+
+    function handleCarouselScroll(event) {
+      const carousel = event.currentTarget;
+      const slideWidth = carousel.clientWidth;
+      if (slideWidth <= 0) return;
+      const activeIndex = Math.round(carousel.scrollLeft / slideWidth);
+      const currentSlide = parseInt(carousel.getAttribute('data-current-slide') || '0');
+      if (activeIndex !== currentSlide) {
+        carousel.setAttribute('data-current-slide', activeIndex);
+        updateCarouselUI(carousel);
+      }
+    }
+
+    function jumpToSlide(dot, index) {
+      const wrapper = dot.closest('.carousel-wrapper') || dot.closest('.post-card') || dot.closest('.carousel-section');
+      const carousel = wrapper.querySelector('.carousel-section') || wrapper;
+      carousel.setAttribute('data-current-slide', index);
+      const slideWidth = carousel.clientWidth;
+      carousel.scrollTo({
+        left: index * slideWidth,
+        behavior: 'smooth'
+      });
+      updateCarouselUI(carousel);
+    }
+
+    function goToSlide(dot, index) {
+      jumpToSlide(dot, index);
+    }
+
+    function updateCarouselUI(carousel) {
+      const currentSlide = parseInt(carousel.getAttribute('data-current-slide') || '0');
+      const wrapper = carousel.closest('.carousel-wrapper') || carousel.closest('.post-card') || carousel;
+      const dots = wrapper.querySelectorAll('.dot');
+      dots.forEach((dot, idx) => {
+        if (idx === currentSlide) {
+          dot.classList.add('active');
+        } else {
+          dot.classList.remove('active');
+        }
+      });
+    }
+
+    async function fetchCommunityPosts() {
+      const container = document.getElementById('community-posts-feed-container');
+      if (!container) return;
+      container.innerHTML = `<div style="text-align: center; padding: 40px; color: #9ca3af;">Loading Community Feed...</div>`;
+      try {
+        const res = await fetch('/api/posts/community');
+        if (!res.ok) throw new Error('Failed to fetch community posts');
+        const posts = await res.json();
+        communityPosts = posts || [];
+        renderFilteredAndSortedPosts();
+      } catch (e) {
+        console.error(e);
+        container.innerHTML = `<div style="text-align: center; padding: 40px; color: #9ca3af;">No community posts available right now.</div>`;
+      }
+    }
+
+    function renderCommunityPostsList(posts) {
+      const container = document.getElementById('community-posts-feed-container');
+      if (!container) return;
+      if (!posts || posts.length === 0) {
+        container.innerHTML = `
+          <div style="text-align: center; padding: 40px; color: #9ca3af;">
+            <p>No community posts shared yet.</p>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = posts.map(post => {
+        const slides = post.slides || [];
+        const totalTokens = post.tokens 
+          ? ((post.tokens.prompt || 0) + (post.tokens.save || 0) + (post.tokens.autopost || 0))
+          : (post.tokens_cost || 2272);
+        
+        return `
+          <div class="post-card post-screenshot-style" id="post-${post.id}" style="background: #ffffff; border-radius: 16px; margin: 16px 16px 24px 16px; overflow: hidden; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.04); border: 1px solid #f3f4f6;">
+            <!-- Post Header -->
+            <div class="post-header" style="display: flex; justify-content: space-between; align-items: center; direction: ltr; padding: 14px 16px; background: #ffffff; border-bottom: 1px solid #f3f4f6;">
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <div style="width: 36px; height: 36px; border-radius: 50%; background: #ef4444; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 13px; color: #ffffff; flex-shrink: 0; overflow: hidden;">
+                  ${post.avatar_url ? `<img src="${post.avatar_url}" style="width:100%;height:100%;object-fit:cover;">` : (post.username || "Creator").slice(0, 2).toUpperCase()}
+                </div>
+                <div style="display: flex; flex-direction: column; text-align: left;">
+                  <span style="font-size: 13.5px; font-weight: 700; color: #111827; line-height: 1.2;">${post.username || "Creator"}</span>
+                  <span style="font-size: 11px; color: #6b7280; line-height: 1.2; margin-top: 2px;">${post.date || "Just now"}</span>
+                </div>
+              </div>
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <span style="font-size: 13.5px; font-weight: 700; color: #111827; letter-spacing: 0.2px;">${totalTokens.toLocaleString()}</span>
+                <svg class="icon-heavy" style="width: 20px; height: 20px; color: #ef4444;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+                </svg>
+              </div>
+            </div>
+            
+            <div class="carousel-wrapper" style="position: relative; width: 100%; aspect-ratio: 1 / 1; background: #fafafa; overflow: hidden;">
+              <div class="carousel-section" data-current-slide="0" data-total-slides="${slides.length}" onscroll="handleCarouselScroll(event)">
+                <div class="carousel-track">
+                  ${slides.map((slide, slideIdx) => `
+                    <div class="carousel-slide">
+                      <iframe class="slide-iframe" onload="adjustIframeScale()" sandbox="allow-same-origin allow-scripts" style="background: ${sanitizeBackgroundStyle(slide.background_style)}; pointer-events: none;" srcdoc="
+                        <!DOCTYPE html>
+                        <html>
+                        <head>
+                          <meta charset='utf-8'>
+                          <style>
+                            html, body {
+                              margin: 0;
+                              padding: 0;
+                              width: 100%;
+                              height: 100%;
+                              overflow: hidden;
+                              background: transparent;
+                            }
+                          </style>
+                        </head>
+                        <body>
+                          ${(slide.html_content || '').replace(/"/g, '&quot;').replace(/'/g, '&#39;')}
+                        </body>
+                        </html>
+                      "></iframe>
+                      <div class="slide-index" style="background: rgba(255,255,255,0.85); color: #111827; border: 1px solid #e5e7eb; box-shadow: 0 2px 5px rgba(0,0,0,0.05);">${slideIdx + 1}/${slides.length}</div>
+                    </div>
+                  `).join('')}
+                </div>
+              </div>
+              
+              <div class="carousel-dots" style="bottom: 10px;">
+                ${slides.map((_, slideIdx) => `
+                  <span class="dot ${slideIdx === 0 ? 'active' : ''}" onclick="jumpToSlide(this, ${slideIdx})"></span>
+                `).join('')}
+              </div>
+            </div>
+
+            <!-- Action Bar (Community Feed - With Like Button) -->
+            <div class="post-actions" style="display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; border-top: 1px solid #f3f4f6; background: #ffffff; direction: ltr;">
+              <div style="display: flex; align-items: center; gap: 18px;">
+                <button class="btn-like-carousel" onclick="toggleLike('${post.id}')" style="background: none; border: none; color: ${post.is_liked ? '#ef4444' : '#111827'}; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0; transition: transform 0.2s;" title="Like">
+                  <svg class="icon-heavy" width="22" height="22" viewBox="0 0 24 24" fill="${post.is_liked ? '#ef4444' : 'none'}" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+                  </svg>
+                </button>
+
+                <button class="btn-share-carousel" onclick="showShareModal('${post.id}', ${post.is_shared})" style="background: none; border: none; color: #111827; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0; transition: transform 0.2s;" title="Share">
+                  <svg class="icon-heavy" width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="18" cy="5" r="3"></circle>
+                    <circle cx="6" cy="12" r="3"></circle>
+                    <circle cx="18" cy="19" r="3"></circle>
+                    <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
+                    <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
+                  </svg>
+                </button>
+
+                <button class="btn-chat-link" onclick="location.href='chat.html?postId=${post.id}'" style="background: none; border: none; color: #111827; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0; transition: transform 0.2s;" title="Chat">
+                  <svg class="icon-heavy" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                  </svg>
+                </button>
+              </div>
+            </div>
+            
+            ${(post.description || post.hashtags) ? `
+            <div class="post-content" style="text-align: left; direction: ltr; padding: 4px 16px 16px 16px; background: #ffffff;">
+              ${post.description ? `<p class="post-desc" style="color: #111827; font-size: 13.5px; line-height: 1.5; margin: 0 0 6px 0;">${post.description}</p>` : ''}
+              ${post.hashtags ? `
+              <div class="post-hashtags" style="direction: ltr; text-align: left; margin-top: 4px;">
+                ${post.hashtags.split(' ').map(tag => tag.trim() ? `<span class="hashtag-item" style="color: #ef4444; font-size: 12.5px; font-weight: 500; margin-right: 6px;">${tag}</span>` : '').join('')}
+              </div>` : ''}
+            </div>` : ''}
+          </div>
+        `;
+      }).join('');
+    }
+
+    async function toggleLike(postId) {
+      try {
+        const res = await fetch(`/api/posts/${postId}/like`, { method: 'POST' });
+        const data = await res.json();
+        if (data.success) {
+          if (typeof initFeed === 'function') initFeed();
+          if (currentFeedTab === 'community') fetchCommunityPosts();
+        }
+      } catch (e) {
+        console.error('Like toggle error:', e);
+      }
+    }
+
+    async function showShareModal(postId, isShared) {
+      let existing = document.getElementById('share-options-modal');
+      if (existing) existing.remove();
+
+      const modal = document.createElement('div');
+      modal.id = 'share-options-modal';
+      modal.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;z-index:99999;font-family:var(--font-family);padding:20px;box-sizing:border-box;';
+      
+      const content = document.createElement('div');
+      content.style.cssText = 'background:#1f2937;border:1px solid #374151;padding:24px;border-radius:16px;box-shadow:0 15px 40px rgba(0,0,0,0.7);width:320px;max-width:100%;text-align:center;display:flex;flex-direction:column;gap:10px;box-sizing:border-box;';
+      
+      const titleEl = document.createElement('h3');
+      titleEl.textContent = 'Share Carousel';
+      titleEl.style.cssText = 'margin:0 0 6px 0;font-size:17px;color:#ffffff;font-weight:700;';
+      content.appendChild(titleEl);
+
+      const instagramBtn = document.createElement('button');
+      instagramBtn.style.cssText = 'background:#111827;border:1px solid #374151;padding:12px 16px;border-radius:10px;font-weight:600;cursor:pointer;font-size:13px;color:#ffffff;display:flex;align-items:center;gap:10px;font-family:var(--font-family);transition:all 0.2s;';
+      instagramBtn.innerHTML = `
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>
+        <span>Share to Instagram</span>
+      `;
+      instagramBtn.onclick = () => {
+        shareToInstagramNative(postId);
+        modal.remove();
+      };
+      content.appendChild(instagramBtn);
+
+      const downloadBtn = document.createElement('button');
+      downloadBtn.style.cssText = 'background:#111827;border:1px solid #374151;padding:12px 16px;border-radius:10px;font-weight:600;cursor:pointer;font-size:13px;color:#ffffff;display:flex;align-items:center;gap:10px;font-family:var(--font-family);transition:all 0.2s;';
+      downloadBtn.innerHTML = `
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+        <span>Download Carousel</span>
+      `;
+      downloadBtn.onclick = () => {
+        downloadCarousel(postId);
+        modal.remove();
+      };
+      content.appendChild(downloadBtn);
+
+      const copyBtn = document.createElement('button');
+      copyBtn.style.cssText = 'background:#111827;border:1px solid #374151;padding:12px 16px;border-radius:10px;font-weight:600;cursor:pointer;font-size:13px;color:#ffffff;display:flex;align-items:center;gap:10px;font-family:var(--font-family);transition:all 0.2s;';
+      copyBtn.innerHTML = `
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+        <span>Copy Shareable Link</span>
+      `;
+      copyBtn.onclick = () => {
+        const link = window.location.origin + '/share.html?postId=' + postId;
+        navigator.clipboard.writeText(link).then(() => {
+          showModalPopup('Link Copied', 'Shareable link copied to clipboard!');
+          modal.remove();
+        });
+      };
+      content.appendChild(copyBtn);
+
+      const communityBtn = document.createElement('button');
+      communityBtn.style.cssText = 'background:#111827;border:1px solid #374151;padding:12px 16px;border-radius:10px;font-weight:600;cursor:pointer;font-size:13px;color:#ffffff;display:flex;align-items:center;justify-content:space-between;gap:8px;font-family:var(--font-family);transition:all 0.2s;';
+      communityBtn.innerHTML = `
+        <span style="display:flex;align-items:center;gap:10px;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+          Share to Community
+        </span>
+        <span id="community-status-badge" style="background:${isShared ? 'rgba(16,185,129,0.2)' : 'rgba(239,68,68,0.2)'};color:${isShared ? '#10b981' : '#ef4444'};font-size:10px;padding:2px 8px;border-radius:20px;text-transform:uppercase;font-weight:700;">
+          ${isShared ? 'Shared' : 'Unshared'}
+        </span>
+      `;
+      communityBtn.onclick = async () => {
+        try {
+          const res = await fetch(`/api/posts/${postId}/share-community`, { method: 'POST' });
+          const data = await res.json();
+          if (data.success) {
+            isShared = data.is_shared;
+            const badge = document.getElementById('community-status-badge');
+            if (badge) {
+              badge.style.background = isShared ? 'rgba(16,185,129,0.2)' : 'rgba(239,68,68,0.2)';
+              badge.style.color = isShared ? '#10b981' : '#ef4444';
+              badge.textContent = isShared ? 'Shared' : 'Unshared';
+            }
+            if (typeof initFeed === 'function') initFeed();
+            if (currentFeedTab === 'community') fetchCommunityPosts();
+            const postObj = allPosts.find(p => p.id === postId);
+            if (postObj) postObj.is_shared = isShared;
+            if (typeof renderFilteredAndSortedPosts === 'function') renderFilteredAndSortedPosts();
+            if (typeof fetchCommunityPosts === 'function') fetchCommunityPosts();
+            showModalPopup(isShared ? 'Shared to Community' : 'Unshared', isShared ? 'This post is now live in the Community feed!' : 'Post removed from the Community feed.');
+          } else {
+            showModalPopup('Share Error', data.error || 'Failed to update community share');
+          }
+        } catch (e) {
+          console.error(e);
+          showModalPopup('Share Error', e.message || 'Network error');
+        }
+      };
+      content.appendChild(communityBtn);
+
+      const closeBtn = document.createElement('button');
+      closeBtn.textContent = 'Close';
+      closeBtn.style.cssText = 'background:#ef4444;color:#ffffff;border:none;padding:10px;border-radius:8px;font-weight:700;cursor:pointer;font-size:13px;margin-top:6px;font-family:var(--font-family);';
+      closeBtn.onclick = () => { modal.remove(); };
+      content.appendChild(closeBtn);
+
+      modal.appendChild(content);
+      document.body.appendChild(modal);
+    }
+
+    function sanitizeBackgroundStyle(bgString) {
+      if (!bgString) return '#ffffff';
+      return bgString.replace(/^(background(-color)?\s*:\s*)/i, '').replace(/;+$/, '').trim();
+    }
+
+    function renderFeedPosts(posts) {
+      const container = document.getElementById('feed-posts-container');
+      if (!container) return;
+      if (!posts || posts.length === 0) {
+        container.innerHTML = `
+          <div style="text-align: center; padding: 48px 20px; color: #6b7280; display: flex; flex-direction: column; align-items: center; gap: 14px;">
+            <div style="width: 56px; height: 56px; border-radius: 50%; background: rgba(239, 68, 68, 0.08); display: flex; align-items: center; justify-content: center; color: #ef4444;">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                <line x1="12" y1="8" x2="12" y2="16"></line>
+                <line x1="8" y1="12" x2="16" y2="12"></line>
+              </svg>
+            </div>
+            <div style="font-size: 15.5px; font-weight: 700; color: #111827; direction: rtl;">
+              עוד לא יצרת שום פוסט - צור עכשיו
+            </div>
+            <button onclick="location.href='chat.html'" style="background: #ef4444; color: #ffffff; border: none; border-radius: 20px; padding: 10px 22px; font-size: 13.5px; font-weight: 700; cursor: pointer; box-shadow: 0 4px 14px rgba(239, 68, 68, 0.35); transition: all 0.2s;">
+              + צור עכשיו
+            </button>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = posts.map((post) => {
+        const slides = post.slides || [];
+        const totalTokens = post.tokens 
+          ? ((post.tokens.prompt || 0) + (post.tokens.save || 0) + (post.tokens.autopost || 0))
+          : (post.tokens_cost || 2272);
+        
+        return `
+          <div class="post-card post-screenshot-style" id="post-${post.id}" style="background: #ffffff; border-radius: 16px; margin: 16px 16px 24px 16px; overflow: hidden; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.04); border: 1px solid #f3f4f6;">
+            <!-- Post Header: Circle Red Avatar + Username/Date Left | Tokens + Red Lightning Right -->
+            <div class="post-header" style="display: flex; justify-content: space-between; align-items: center; direction: ltr; padding: 14px 16px; background: #ffffff; border-bottom: 1px solid #f3f4f6;">
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <div style="width: 36px; height: 36px; border-radius: 50%; background: #ef4444; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 13px; color: #ffffff; flex-shrink: 0; overflow: hidden;">
+                  ${post.avatar_url ? `<img src="${post.avatar_url}" style="width:100%;height:100%;object-fit:cover;">` : (post.username || "check").slice(0, 2).toUpperCase()}
+                </div>
+                <div style="display: flex; flex-direction: column; text-align: left;">
+                  <span style="font-size: 13.5px; font-weight: 700; color: #111827; line-height: 1.2;">${post.username || "check"}</span>
+                  <span style="font-size: 11px; color: #6b7280; line-height: 1.2; margin-top: 2px;">${post.date || "9/14/2026"}</span>
+                </div>
+              </div>
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <span style="font-size: 13.5px; font-weight: 700; color: #111827; letter-spacing: 0.2px;">${totalTokens.toLocaleString()}</span>
+                <svg class="icon-heavy" style="width: 20px; height: 20px; color: #ef4444;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+                </svg>
+              </div>
+            </div>
+            
+            <div class="carousel-wrapper" style="position: relative; width: 100%; aspect-ratio: 1 / 1; background: #fafafa; overflow: hidden;">
+              <div class="carousel-section" data-current-slide="0" data-total-slides="${slides.length}" onscroll="handleCarouselScroll(event)">
+                <div class="carousel-track">
+                  ${slides.map((slide, slideIdx) => `
+                    <div class="carousel-slide">
+                      <iframe class="slide-iframe" onload="adjustIframeScale()" sandbox="allow-same-origin allow-scripts" style="background: ${sanitizeBackgroundStyle(slide.background_style)}; pointer-events: none;" srcdoc="
+                        <!DOCTYPE html>
+                        <html>
+                        <head>
+                          <meta charset='utf-8'>
+                          <style>
+                            html, body {
+                              margin: 0;
+                              padding: 0;
+                              width: 100%;
+                              height: 100%;
+                              overflow: hidden;
+                              background: transparent;
+                            }
+                          </style>
+                        </head>
+                        <body>
+                          ${(slide.html_content || '').replace(/"/g, '&quot;').replace(/'/g, '&#39;')}
+                        </body>
+                        </html>
+                      "></iframe>
+                      <div class="slide-index" style="background: rgba(255,255,255,0.85); color: #111827; border: 1px solid #e5e7eb; box-shadow: 0 2px 5px rgba(0,0,0,0.05);">${slideIdx + 1}/${slides.length}</div>
+                    </div>
+                  `).join('')}
+                </div>
+              </div>
+              
+              <div class="carousel-dots" style="bottom: 10px;">
+                ${slides.map((_, slideIdx) => `
+                  <span class="dot ${slideIdx === 0 ? 'active' : ''}" onclick="jumpToSlide(this, ${slideIdx})"></span>
+                `).join('')}
+              </div>
+            </div>
+
+            <!-- Action Bar (Feed / Yours - No Like Button, Share & Chat left | Trash right) -->
+            <div class="post-actions" style="display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; border-top: 1px solid #f3f4f6; background: #ffffff; direction: ltr;">
+              <div style="display: flex; align-items: center; gap: 18px;">
+                <button class="btn-share-carousel" onclick="showShareModal('${post.id}', ${post.is_shared})" style="background: none; border: none; color: #111827; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0; transition: transform 0.2s;" title="Share">
+                  <svg class="icon-heavy" width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="18" cy="5" r="3"></circle>
+                    <circle cx="6" cy="12" r="3"></circle>
+                    <circle cx="18" cy="19" r="3"></circle>
+                    <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
+                    <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
+                  </svg>
+                </button>
+
+                <button class="btn-chat-link" onclick="location.href='chat.html?postId=${post.id}'" style="background: none; border: none; color: #111827; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0; transition: transform 0.2s;" title="Chat">
+                  <svg class="icon-heavy" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                  </svg>
+                </button>
+              </div>
+
+              <button class="btn-delete-carousel" onclick="deleteCarousel('${post.id}')" style="background: none; border: none; color: #111827; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0; transition: transform 0.2s;" title="Delete Post">
+                <svg class="icon-heavy" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="3 6 5 6 21 6"></polyline>
+                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                </svg>
+              </button>
+            </div>
+            
+            <!-- Description & Hashtags -->
+            ${(post.description || post.hashtags) ? `
+            <div class="post-content" style="text-align: left; direction: ltr; padding: 4px 16px 16px 16px; background: #ffffff;">
+              ${post.description ? `<p class="post-desc" style="color: #111827; font-size: 13.5px; line-height: 1.5; margin: 0 0 6px 0;">${post.description}</p>` : ''}
+              ${post.hashtags ? `
+              <div class="post-hashtags" style="direction: ltr; text-align: left; margin-top: 4px;">
+                ${post.hashtags.split(' ').map(tag => tag.trim() ? `<span class="hashtag-item" style="color: #ef4444; font-size: 12.5px; font-weight: 500; margin-right: 6px;">${tag}</span>` : '').join('')}
+              </div>` : ''}
+            </div>` : ''}
+          </div>
+        `;
+      }).join('');
+
+      setTimeout(adjustIframeScale, 50);
+    }
+
+    async function logout() {
+      try {
+        await fetch('/api/auth/logout', { method: 'POST' });
+      } catch (err) {
+        console.error('Logout error:', err);
+      }
+      localStorage.removeItem('currentUser');
+      localStorage.removeItem('authToken');
+      window.location.href = 'login.html';
+    }
+
+    function loadDemoPosts() {
+      console.log('Loading Palette 18 demo posts for offline / direct viewing...');
+      allPosts = [
+        {
+          id: "demo-p1",
+          username: "check",
+          title: "NEURAL INTERSECTIONS",
+          description: "Exploring the boundaries of generative aesthetics and human agency in design.",
+          hashtags: "#AI #Design #Innovation #Palette18",
+          tokens_cost: 2272,
+          is_liked: 0,
+          is_shared: 1,
+          date: new Date().toLocaleDateString("en-US"),
+          created_at: new Date().toISOString(),
+          slides: [
+            {
+              background_style: "linear-gradient(135deg, #111827 0%, #1f2937 100%)",
+              html_content: `
+                <div style="padding: 40px; color: #fff; font-family: 'Inter', sans-serif; display: flex; flex-direction: column; justify-content: center; height: 100%; box-sizing: border-box;">
+                  <span style="color: #ef4444; font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 12px;">Palette 18</span>
+                  <h1 style="font-size: 32px; font-weight: 800; line-height: 1.15; margin: 0 0 20px 0;">NEURAL<br/><span style="color: #ef4444;">INTERSECTIONS</span></h1>
+                  <p style="font-size: 15px; color: #9ca3af; margin: 0; line-height: 1.5;">Human intuition meets generative intelligence in modern UI/UX design.</p>
+                </div>
+              `
+            },
+            {
+              background_style: "linear-gradient(135deg, #1f2937 0%, #111827 100%)",
+              html_content: `
+                <div style="padding: 40px; color: #fff; font-family: 'Inter', sans-serif; display: flex; flex-direction: column; justify-content: center; height: 100%; box-sizing: border-box;">
+                  <span style="color: #ef4444; font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 12px;">Key Principle</span>
+                  <h2 style="font-size: 26px; font-weight: 800; margin: 0 0 16px 0;">Precision Layouts</h2>
+                  <p style="font-size: 14px; color: #9ca3af; margin: 0; line-height: 1.5;">Flush full-width navigation, calibrated contrast, and seamless typography.</p>
+                </div>
+              `
+            },
+            {
+              background_style: "linear-gradient(135deg, #111827 0%, #000000 100%)",
+              html_content: `
+                <div style="padding: 40px; color: #fff; font-family: 'Inter', sans-serif; display: flex; flex-direction: column; justify-content: center; height: 100%; box-sizing: border-box;">
+                  <span style="color: #ef4444; font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 12px;">Action</span>
+                  <h2 style="font-size: 26px; font-weight: 800; margin: 0 0 16px 0;">Ready to Create?</h2>
+                  <p style="font-size: 14px; color: #9ca3af; margin: 0; line-height: 1.5;">Start a new carousel session using the Chat button below.</p>
+                </div>
+              `
+            }
+          ]
+        },
+        {
+          id: "demo-p2",
+          username: "Karu Creator",
+          title: "AI Integration: Strategic Imperatives",
+          description: "How autonomous agents transform production pipelines and creative workflows.",
+          hashtags: "#Automation #Productivity #AI2026",
+          tokens_cost: 18450,
+          is_liked: 1,
+          is_shared: 0,
+          date: new Date().toLocaleDateString("en-US"),
+          created_at: new Date().toISOString(),
+          slides: [
+            {
+              background_style: "linear-gradient(135deg, #09090b 0%, #1e293b 100%)",
+              html_content: `
+                <div style="padding: 40px; color: #fff; font-family: 'Inter', sans-serif; display: flex; flex-direction: column; justify-content: center; height: 100%; box-sizing: border-box;">
+                  <span style="color: #ef4444; font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 12px;">Strategy</span>
+                  <h1 style="font-size: 30px; font-weight: 800; line-height: 1.15; margin: 0 0 20px 0;">AI Integration<br/><span style="color: #ef4444;">Imperatives</span></h1>
+                  <p style="font-size: 14px; color: #9ca3af; margin: 0; line-height: 1.5;">Beyond automation: building symbiotic agent systems for creators.</p>
+                </div>
+              `
+            },
+            {
+              background_style: "linear-gradient(135deg, #1e293b 0%, #09090b 100%)",
+              html_content: `
+                <div style="padding: 40px; color: #fff; font-family: 'Inter', sans-serif; display: flex; flex-direction: column; justify-content: center; height: 100%; box-sizing: border-box;">
+                  <span style="color: #ef4444; font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 12px;">Insight</span>
+                  <h2 style="font-size: 24px; font-weight: 800; margin: 0 0 16px 0;">Continuous Delivery</h2>
+                  <p style="font-size: 14px; color: #9ca3af; margin: 0; line-height: 1.5;">Zero-friction publishing directly to Instagram, Community, and export.</p>
+                </div>
+              `
+            }
+          ]
+        }
+      ];
+      renderFilteredAndSortedPosts();
+    }
+
+    async function initFeed() {
+      try {
+        if (window.location.protocol === 'file:') {
+          console.warn('Running via file:// protocol. Loading demo posts for local viewing.');
+          loadDemoPosts();
+          return;
+        }
+
+        const authRes = await fetch('/api/auth/me');
+        if (!authRes.ok) {
+          console.warn('Auth check failed with status: ' + authRes.status);
+          if (authRes.status === 401) {
+            window.location.href = 'login.html';
+            return;
+          }
+          loadDemoPosts();
+          return;
+        }
+        
+        const user = await authRes.json();
+        localStorage.setItem('currentUser', JSON.stringify(user));
+
+        if (user.role === 'admin') {
+          const adminBtn = document.getElementById('admin-nav-btn');
+          if (adminBtn) adminBtn.style.display = 'flex';
+        }
+
+        // Fetch user posts
+        const postsRes = await fetch('/api/posts/my');
+        if (!postsRes.ok) {
+          throw new Error('Failed to fetch posts: Status ' + postsRes.status);
+        }
+        allPosts = await postsRes.json() || [];
+        renderFilteredAndSortedPosts();
+
+      } catch (err) {
+        console.error('Feed initialization error:', err);
+        allPosts = [];
+        renderFilteredAndSortedPosts();
+      }
+    }
+
+    function adjustIframeScale() {
+      const slides = document.querySelectorAll('.carousel-slide');
+      slides.forEach(slide => {
+        const iframe = slide.querySelector('.slide-iframe');
+        if (iframe) {
+          const containerWidth = slide.clientWidth;
+          if (containerWidth > 0) {
+            const scale = containerWidth / 540;
+            iframe.style.transform = `scale(${scale})`;
+          }
+        }
+      });
+    }
+
+    window.addEventListener('resize', adjustIframeScale);
+    document.addEventListener('DOMContentLoaded', () => {
+      initFeed();
+      renderViralSuggestions();
+      setTimeout(adjustIframeScale, 500);
+    });
+
+    async function downloadCarousel(postId) {
+      const btn = document.querySelector(`#post-${postId} .btn-download-carousel`);
+      const originalHTML = btn ? btn.innerHTML : '';
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = `<svg class="spinner" width="16" height="16" viewBox="0 0 50 50" style="animation: rotate 2s linear infinite; color: #ef4444;"><circle cx="25" cy="25" r="20" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round" style="stroke-dasharray: 1, 150; stroke-dashoffset: 0; animation: dash 1.5s ease-in-out infinite;"></circle></svg>`;
+      }
+      
+      try {
+        let post = allPosts.find(p => p.id === postId);
+        if (!post || !post.slides) {
+          const res = await fetch(`/api/posts/${postId}/chat`);
+          if (res.ok) {
+            const data = await res.json();
+            post = data.carousel;
+          }
+        }
+        
+        if (!post || !post.slides) throw new Error('Post or slides not found');
+        
+        const tempIframe = document.createElement('iframe');
+        tempIframe.style.width = '540px';
+        tempIframe.style.height = '540px';
+        tempIframe.style.position = 'fixed';
+        tempIframe.style.top = '-9999px';
+        tempIframe.style.left = '-9999px';
+        tempIframe.style.border = 'none';
+        document.body.appendChild(tempIframe);
+        
+        const slides = post.slides;
+        for (let i = 0; i < slides.length; i++) {
+          const slide = slides[i];
+          const iframeDoc = tempIframe.contentWindow.document;
+          iframeDoc.open();
+          iframeDoc.write(`
+            <!DOCTYPE html>
+            <html>
+            <head>
+              <meta charset="utf-8">
+              <style>
+                html, body {
+                  margin: 0;
+                  padding: 0;
+                  width: 540px;
+                  height: 540px;
+                  overflow: hidden;
+                  background: ${sanitizeBackgroundStyle(slide.background_style)};
+                }
+              </style>
+            </head>
+            <body>
+              ${slide.html_content}
+            </body>
+            </html>
+          `);
+          iframeDoc.close();
+          
+          await Promise.all([
+            iframeDoc.fonts ? iframeDoc.fonts.ready : Promise.resolve(),
+            new Promise(resolve => {
+              const images = Array.from(iframeDoc.images);
+              if (images.length === 0) return resolve();
+              let loaded = 0;
+              images.forEach(img => {
+                if (img.complete) {
+                  loaded++;
+                  if (loaded === images.length) resolve();
+                } else {
+                  img.onload = img.onerror = () => {
+                    loaded++;
+                    if (loaded === images.length) resolve();
+                  };
+                }
+              });
+            })
+          ]);
+          await new Promise(resolve => setTimeout(resolve, 200));
+          
+          const canvas = await html2canvas(iframeDoc.body, {
+            width: 540,
+            height: 540,
+            scale: 2,
+            useCORS: true,
+            allowTaint: true,
+            logging: false
+          });
+          
+          const link = document.createElement('a');
+          link.download = `${(post.title || 'carousel').replace(/[^a-zA-Z0-9-]+/g, '_')}_slide_${i + 1}.png`;
+          link.href = canvas.toDataURL('image/png');
+          link.click();
+        }
+        
+        document.body.removeChild(tempIframe);
+        showModalPopup('Download Complete', 'All slides downloaded successfully!');
+      } catch (err) {
+        console.error('Download error:', err);
+        showModalPopup('Download Error', err.message || 'Failed to download slides');
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = originalHTML;
+        }
+      }
+    }
+
+    async function shareToInstagramNative(postId) {
+      try {
+        let post = allPosts.find(p => p.id === postId);
+        if (!post || !post.slides) {
+          const res = await fetch(`/api/posts/${postId}/chat`);
+          if (res.ok) {
+            const data = await res.json();
+            post = data.carousel;
+          }
+        }
+
+        if (!post || !post.slides || !post.slides.length) throw new Error('Post or slides not found');
+
+        const fullCaption = `${post.description || ''}\n\n${post.hashtags || ''}`.trim();
+        const slidesImages = [];
+
+        const tempIframe = document.createElement('iframe');
+        tempIframe.style.width = '540px';
+        tempIframe.style.height = '540px';
+        tempIframe.style.position = 'fixed';
+        tempIframe.style.top = '-9999px';
+        tempIframe.style.left = '-9999px';
+        tempIframe.style.border = 'none';
+        document.body.appendChild(tempIframe);
+
+        for (let i = 0; i < post.slides.length; i++) {
+          const slide = post.slides[i];
+          const iframeDoc = tempIframe.contentWindow.document;
+          iframeDoc.open();
+          iframeDoc.write(`
+            <!DOCTYPE html>
+            <html>
+            <head>
+              <meta charset="utf-8">
+              <style>
+                html, body {
+                  margin: 0;
+                  padding: 0;
+                  width: 540px;
+                  height: 540px;
+                  overflow: hidden;
+                  background: ${sanitizeBackgroundStyle(slide.background_style)};
+                }
+              </style>
+            </head>
+            <body>
+              ${slide.html_content}
+            </body>
+            </html>
+          `);
+          iframeDoc.close();
+
+          await Promise.all([
+            iframeDoc.fonts ? iframeDoc.fonts.ready : Promise.resolve(),
+            new Promise(resolve => {
+              const images = Array.from(iframeDoc.images);
+              if (images.length === 0) return resolve();
+              let loaded = 0;
+              images.forEach(img => {
+                if (img.complete) {
+                  loaded++;
+                  if (loaded === images.length) resolve();
+                } else {
+                  img.onload = img.onerror = () => {
+                    loaded++;
+                    if (loaded === images.length) resolve();
+                  };
+                }
+              });
+            })
+          ]);
+          await new Promise(resolve => setTimeout(resolve, 200));
+
+          const canvas = await html2canvas(iframeDoc.body, {
+            width: 540,
+            height: 540,
+            scale: 2,
+            useCORS: true,
+            allowTaint: true,
+            logging: false
+          });
+
+          slidesImages.push(canvas.toDataURL('image/png'));
+        }
+
+        document.body.removeChild(tempIframe);
+
+        const apiRes = await fetch('/api/social/publish-instagram', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            postId: postId,
+            slidesImages: slidesImages,
+            caption: fullCaption
+          })
+        });
+
+        const apiData = await apiRes.json();
+
+        if (!apiRes.ok || !apiData.success) {
+          throw new Error(apiData.error || 'Error publishing to Instagram');
+        }
+
+        showModalPopup(
+          'Instagram Published!',
+          'Carousel published successfully to your Instagram account!'
+        );
+
+      } catch (err) {
+        console.error('Instagram publish error:', err);
+        showModalPopup('Instagram Publish', err.message || 'Could not publish to Instagram');
+      }
+    }
+
+    async function deleteCarousel(postId) {
+      if (!confirm('Are you sure you want to delete this post permanently?')) return;
+      
+      try {
+        const res = await fetch(`/api/posts/${postId}`, {
+          method: 'DELETE'
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Error deleting post');
+        
+        const card = document.getElementById(`post-${postId}`);
+        if (card) {
+          card.remove();
+        }
+        
+        if (typeof initFeed === 'function') {
+          initFeed();
+        }
+      } catch (err) {
+        console.error('Delete carousel error:', err);
+        showModalPopup('Delete Error', err.message);
+      }
+    }
+
+    // Carousel mouse drag
+    let isDraggingCarousel = false;
+    let dragStartX = 0;
+    let dragScrollLeft = 0;
+    let dragTargetCarousel = null;
+
+    document.addEventListener('mousedown', (e) => {
+      const carousel = e.target.closest('.carousel-section');
+      if (!carousel) return;
+      isDraggingCarousel = true;
+      dragTargetCarousel = carousel;
+      dragStartX = e.pageX - carousel.offsetLeft;
+      dragScrollLeft = carousel.scrollLeft;
+      carousel.style.scrollSnapType = 'none';
+      carousel.style.scrollBehavior = 'auto';
+    });
+
+    document.addEventListener('mousemove', (e) => {
+      if (!isDraggingCarousel || !dragTargetCarousel) return;
+      e.preventDefault();
+      const x = e.pageX - dragTargetCarousel.offsetLeft;
+      const walk = (x - dragStartX) * 1.5;
+      dragTargetCarousel.scrollLeft = dragScrollLeft - walk;
+    });
+
+    document.addEventListener('mouseup', (e) => {
+      if (!isDraggingCarousel || !dragTargetCarousel) return;
+      isDraggingCarousel = false;
+      
+      const carousel = dragTargetCarousel;
+      dragTargetCarousel = null;
+      
+      carousel.style.scrollSnapType = 'x mandatory';
+      carousel.style.scrollBehavior = 'smooth';
+      
+      const slideWidth = carousel.clientWidth;
+      if (slideWidth > 0) {
+        const activeIndex = Math.round(carousel.scrollLeft / slideWidth);
+        carousel.scrollTo({
+          left: activeIndex * slideWidth,
+          behavior: 'smooth'
+        });
+      }
+    });
+  </script>
+</body>
+</html>

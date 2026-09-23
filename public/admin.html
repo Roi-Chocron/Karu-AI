@@ -1,0 +1,2420 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <script src="/auth_helper.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Karu AI — פאנל ניהול</title>
+  <script src="https://js.puter.com/v2/"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;700;800;900&family=Outfit:wght@300;400;500;700;800;900&display=swap');
+
+    @font-face {
+      font-family: 'Rubik';
+      src: url('Rubik.ttf') format('truetype');
+      font-weight: 300 900;
+      font-display: swap;
+    }
+
+    :root {
+      --color-primary: #ef4444;
+      --color-primary-hover: #dc2626;
+      --color-primary-glow: rgba(239, 68, 68, 0.2);
+      --color-bg: #111827;
+      --color-surface: #1f2937;
+      --color-surface2: #374151;
+      --color-border: #374151;
+      --color-border-light: #4b5563;
+      --color-text: #f9fafb;
+      --color-text-muted: #9ca3af;
+      --color-text-sub: #6b7280;
+      --color-success: #10b981;
+      --color-warning: #f59e0b;
+      --color-info: #3b82f6;
+      --font-family: 'Rubik', 'Heebo', system-ui, sans-serif;
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --radius-lg: 16px;
+      --radius-xl: 20px;
+      --tab-bar-height: 60px;
+    }
+
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html, body {
+      height: 100%;
+      width: 100%;
+      overflow: hidden;
+      font-family: var(--font-family);
+      background: #0f172a;
+      background-image:
+        linear-gradient(45deg, #1e293b 25%, transparent 25%),
+        linear-gradient(-45deg, #1e293b 25%, transparent 25%),
+        linear-gradient(45deg, transparent 75%, #1e293b 75%),
+        linear-gradient(-45deg, transparent 75%, #1e293b 75%);
+      background-size: 20px 20px;
+      background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+      color: var(--color-text);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    /* ============================================================
+       MOBILE FRAME
+    ============================================================ */
+    .mobile-frame {
+      width: 100%;
+      max-width: 440px;
+      height: 100%;
+      background: var(--color-bg);
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      border-inline: 1px solid #1f2937;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+    }
+
+    /* ============================================================
+       TOP HEADER
+    ============================================================ */
+    .app-header {
+      background: var(--color-surface);
+      border-bottom: 1px solid var(--color-border);
+      padding: 0 16px;
+      height: 56px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+      padding-top: env(safe-area-inset-top, 0px);
+      position: relative;
+      z-index: 50;
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .header-back {
+      width: 34px;
+      height: 34px;
+      border-radius: var(--radius-sm);
+      background: var(--color-surface2);
+      border: 1px solid var(--color-border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      text-decoration: none;
+      color: var(--color-text-muted);
+      font-size: 16px;
+      transition: all 0.2s;
+    }
+    .header-back:hover { background: var(--color-border); color: var(--color-text); }
+
+    .header-title {
+      font-size: 15px;
+      font-weight: 800;
+      color: var(--color-text);
+    }
+
+    .header-title span {
+      color: var(--color-primary);
+    }
+
+    .header-badge {
+      background: rgba(239,68,68,0.15);
+      color: var(--color-primary);
+      font-size: 10px;
+      font-weight: 800;
+      padding: 2px 8px;
+      border-radius: 20px;
+      border: 1px solid rgba(239,68,68,0.3);
+      letter-spacing: 0.5px;
+    }
+
+    /* ============================================================
+       STATS BAR
+    ============================================================ */
+    .stats-bar {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1px;
+      background: var(--color-border);
+      border-bottom: 1px solid var(--color-border);
+      flex-shrink: 0;
+    }
+
+    .stat-item {
+      background: var(--color-surface);
+      padding: 10px 8px;
+      text-align: center;
+    }
+
+    .stat-item .stat-val {
+      font-size: 18px;
+      font-weight: 900;
+      color: var(--color-text);
+      line-height: 1;
+    }
+
+    .stat-item .stat-lbl {
+      font-size: 9px;
+      color: var(--color-text-sub);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+      margin-top: 3px;
+    }
+
+    /* ============================================================
+       TAB BAR
+    ============================================================ */
+    .tab-bar {
+      display: flex;
+      background: var(--color-surface);
+      border-bottom: 1px solid var(--color-border);
+      flex-shrink: 0;
+    }
+
+    .tab-btn {
+      flex: 1;
+      padding: 12px 4px 10px;
+      background: none;
+      border: none;
+      border-bottom: 2px solid transparent;
+      color: var(--color-text-sub);
+      font-family: var(--font-family);
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+      transition: all 0.2s;
+      position: relative;
+    }
+
+    .tab-btn .tab-icon {
+      font-size: 17px;
+      line-height: 1;
+    }
+
+    .tab-btn.active {
+      color: var(--color-primary);
+      border-bottom-color: var(--color-primary);
+    }
+
+    .tab-btn:not(.active):hover {
+      color: var(--color-text-muted);
+      background: rgba(255,255,255,0.02);
+    }
+
+    .tab-badge {
+      position: absolute;
+      top: 8px;
+      right: calc(50% - 12px);
+      background: var(--color-primary);
+      color: #fff;
+      font-size: 9px;
+      font-weight: 900;
+      padding: 1px 5px;
+      border-radius: 10px;
+      min-width: 16px;
+      text-align: center;
+    }
+
+    /* ============================================================
+       CONTENT AREA
+    ============================================================ */
+    .content-area {
+      flex: 1;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .tab-pane {
+      position: absolute;
+      inset: 0;
+      overflow-y: auto;
+      display: none;
+      flex-direction: column;
+      padding: 16px;
+      gap: 12px;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+    }
+    .tab-pane::-webkit-scrollbar { display: none; }
+
+    .tab-pane.active {
+      display: flex;
+    }
+
+    /* ============================================================
+       CARDS & SECTIONS
+    ============================================================ */
+    .card {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+    }
+
+    .card-header {
+      padding: 14px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--color-border);
+    }
+
+    .card-title {
+      font-size: 13px;
+      font-weight: 800;
+      color: var(--color-text);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .card-title-icon {
+      width: 28px;
+      height: 28px;
+      border-radius: var(--radius-sm);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+    }
+
+    /* ============================================================
+       SEARCH INPUT
+    ============================================================ */
+    .search-box {
+      margin: 12px 16px;
+      position: relative;
+    }
+
+    .search-box input {
+      width: 100%;
+      height: 38px;
+      background: var(--color-surface2);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      color: var(--color-text);
+      font-family: var(--font-family);
+      font-size: 13px;
+      padding: 0 12px 0 36px;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .search-box input:focus {
+      border-color: var(--color-primary);
+      box-shadow: 0 0 0 2px var(--color-primary-glow);
+    }
+    .search-box input::placeholder { color: var(--color-text-sub); }
+
+    .search-box .search-icon {
+      position: absolute;
+      right: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--color-text-sub);
+      font-size: 14px;
+      pointer-events: none;
+    }
+
+    /* ============================================================
+       USER LIST
+    ============================================================ */
+    .user-list {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .user-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--color-border);
+      cursor: pointer;
+      transition: background 0.15s;
+      text-decoration: none;
+      color: inherit;
+    }
+
+    .user-item:last-child { border-bottom: none; }
+
+    .user-item:active, .user-item:hover {
+      background: rgba(255,255,255,0.03);
+    }
+
+    .user-avatar {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--color-primary) 0%, #7c3aed 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      font-weight: 900;
+      color: #fff;
+      flex-shrink: 0;
+      text-transform: uppercase;
+    }
+
+    .user-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .user-name {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--color-text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .user-email {
+      font-size: 11px;
+      color: var(--color-text-muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-top: 2px;
+      direction: ltr;
+      text-align: right;
+    }
+
+    .user-meta {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 4px;
+      flex-shrink: 0;
+    }
+
+    .chevron {
+      color: var(--color-text-sub);
+      font-size: 11px;
+      margin-top: 2px;
+    }
+
+    /* ============================================================
+       BADGES
+    ============================================================ */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 2px 8px;
+      border-radius: 20px;
+      font-size: 9px;
+      font-weight: 800;
+      letter-spacing: 0.3px;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    .badge-free    { background: rgba(107,114,128,0.2); color: #9ca3af; border: 1px solid rgba(107,114,128,0.3); }
+    .badge-basic   { background: rgba(59,130,246,0.15); color: #60a5fa; border: 1px solid rgba(59,130,246,0.3); }
+    .badge-pro     { background: rgba(239,68,68,0.15);  color: #f87171; border: 1px solid rgba(239,68,68,0.3); }
+    .badge-agency  { background: rgba(245,158,11,0.15); color: #fbbf24; border: 1px solid rgba(245,158,11,0.3); }
+    .badge-admin   { background: rgba(239,68,68,0.15);  color: #f87171; border: 1px solid rgba(239,68,68,0.3); }
+    .badge-user    { background: rgba(107,114,128,0.15); color: #9ca3af; border: 1px solid rgba(107,114,128,0.25); }
+    .badge-success { background: rgba(16,185,129,0.15); color: #34d399; border: 1px solid rgba(16,185,129,0.3); }
+
+    /* ============================================================
+       CAROUSELS TAB — POST CARDS
+    ============================================================ */
+    .post-card {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .post-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+    }
+
+    .post-card-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--color-text);
+      flex: 1;
+      padding-left: 8px;
+    }
+
+    .post-card-meta {
+      font-size: 11px;
+      color: var(--color-text-muted);
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .token-chips {
+      display: flex;
+      gap: 4px;
+      flex-wrap: wrap;
+    }
+
+    .token-chip {
+      font-size: 9px;
+      font-weight: 800;
+      padding: 2px 6px;
+      border-radius: 4px;
+      color: #fff;
+    }
+    .tc-send     { background: #3b82f6; }
+    .tc-save     { background: #10b981; }
+    .tc-autopost { background: var(--color-primary); }
+
+    .post-total-tokens {
+      font-size: 12px;
+      font-weight: 900;
+      color: var(--color-primary);
+    }
+
+    .delete-btn {
+      background: rgba(239,68,68,0.1);
+      border: 1px solid rgba(239,68,68,0.2);
+      color: var(--color-primary);
+      font-size: 11px;
+      font-weight: 700;
+      padding: 5px 10px;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      font-family: var(--font-family);
+      transition: all 0.2s;
+    }
+    .delete-btn:hover {
+      background: rgba(239,68,68,0.2);
+    }
+
+    /* ============================================================
+       SETTINGS TAB
+    ============================================================ */
+    .settings-group {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+    }
+
+    .settings-row {
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--color-border);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .settings-row:last-child { border-bottom: none; }
+
+    .settings-label {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--color-text);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .settings-desc {
+      font-size: 11px;
+      color: var(--color-text-sub);
+      line-height: 1.5;
+    }
+
+    .settings-input {
+      width: 100%;
+      background: var(--color-surface2);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-sm);
+      color: var(--color-text);
+      font-family: var(--font-family);
+      font-size: 13px;
+      padding: 10px 12px;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .settings-input:focus {
+      border-color: var(--color-primary);
+      box-shadow: 0 0 0 2px var(--color-primary-glow);
+    }
+    .settings-input::placeholder { color: var(--color-text-sub); }
+
+    textarea.settings-input {
+      min-height: 100px;
+      resize: vertical;
+      font-family: monospace;
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    select.settings-input {
+      cursor: pointer;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236b7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: left 10px center;
+      background-size: 16px;
+      padding-left: 34px;
+    }
+
+    .save-btn {
+      width: 100%;
+      height: 46px;
+      background: var(--color-primary);
+      border: none;
+      border-radius: var(--radius-md);
+      color: #fff;
+      font-family: var(--font-family);
+      font-size: 14px;
+      font-weight: 800;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: background 0.2s, transform 0.1s;
+    }
+    .save-btn:hover { background: var(--color-primary-hover); }
+    .save-btn:active { transform: scale(0.98); }
+
+    .model-status-banner {
+      background: rgba(16,185,129,0.1);
+      border: 1px solid rgba(16,185,129,0.25);
+      border-radius: var(--radius-md);
+      padding: 12px 14px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--color-success);
+      flex-shrink: 0;
+      box-shadow: 0 0 6px rgba(16,185,129,0.6);
+    }
+
+    .model-status-text { flex: 1; }
+    .model-status-text strong {
+      display: block;
+      font-size: 12px;
+      font-weight: 800;
+      color: #34d399;
+    }
+    .model-status-text span {
+      font-size: 10px;
+      color: var(--color-text-muted);
+      font-family: monospace;
+    }
+
+    /* ============================================================
+       USER DETAIL PANEL (SLIDE-IN)
+    ============================================================ */
+    .detail-panel {
+      position: absolute;
+      inset: 0;
+      background: var(--color-bg);
+      z-index: 100;
+      display: flex;
+      flex-direction: column;
+      transform: translateX(-100%);
+      transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .detail-panel.open {
+      transform: translateX(0);
+    }
+
+    .detail-header {
+      background: var(--color-surface);
+      border-bottom: 1px solid var(--color-border);
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-shrink: 0;
+      padding-top: env(safe-area-inset-top, 0px);
+    }
+
+    .back-btn {
+      width: 34px;
+      height: 34px;
+      border-radius: var(--radius-sm);
+      background: var(--color-surface2);
+      border: 1px solid var(--color-border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      color: var(--color-text-muted);
+      font-size: 16px;
+      transition: all 0.2s;
+      flex-shrink: 0;
+    }
+    .back-btn:hover { background: var(--color-border); color: var(--color-text); }
+
+    .detail-user-info {
+      flex: 1;
+    }
+
+    .detail-user-name {
+      font-size: 15px;
+      font-weight: 800;
+      color: var(--color-text);
+    }
+
+    .detail-user-email {
+      font-size: 11px;
+      color: var(--color-text-muted);
+      direction: ltr;
+    }
+
+    .detail-edit-btn {
+      background: rgba(239,68,68,0.15);
+      border: 1px solid rgba(239,68,68,0.3);
+      color: var(--color-primary);
+      font-family: var(--font-family);
+      font-size: 11px;
+      font-weight: 800;
+      padding: 6px 12px;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .detail-edit-btn:hover {
+      background: rgba(239,68,68,0.25);
+    }
+
+    .detail-body {
+      flex: 1;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+    }
+    .detail-body::-webkit-scrollbar { display: none; }
+
+    /* Detail sub-tabs */
+    .detail-tabs {
+      display: flex;
+      background: var(--color-surface);
+      border-bottom: 1px solid var(--color-border);
+      flex-shrink: 0;
+    }
+
+    .detail-tab-btn {
+      flex: 1;
+      padding: 11px 4px;
+      background: none;
+      border: none;
+      border-bottom: 2px solid transparent;
+      color: var(--color-text-sub);
+      font-family: var(--font-family);
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .detail-tab-btn.active {
+      color: var(--color-primary);
+      border-bottom-color: var(--color-primary);
+    }
+
+    .detail-tab-pane {
+      display: none;
+      padding: 16px;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .detail-tab-pane.active {
+      display: flex;
+    }
+
+    /* User profile card */
+    .profile-hero {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      padding: 20px 16px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      text-align: center;
+    }
+
+    .profile-avatar-large {
+      width: 72px;
+      height: 72px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--color-primary) 0%, #7c3aed 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 28px;
+      font-weight: 900;
+      color: #fff;
+      text-transform: uppercase;
+      box-shadow: 0 0 20px var(--color-primary-glow);
+    }
+
+    .profile-badges {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .profile-stats-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1px;
+      background: var(--color-border);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      width: 100%;
+    }
+
+    .profile-stat {
+      background: var(--color-surface2);
+      padding: 12px 8px;
+      text-align: center;
+    }
+
+    .profile-stat .ps-val {
+      font-size: 20px;
+      font-weight: 900;
+      color: var(--color-text);
+    }
+
+    .profile-stat .ps-lbl {
+      font-size: 9px;
+      color: var(--color-text-sub);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+      margin-top: 2px;
+    }
+
+    /* Chat bubbles */
+    .chat-bubble {
+      max-width: 80%;
+      padding: 10px 12px;
+      border-radius: 14px;
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .chat-bubble.user {
+      background: var(--color-primary);
+      color: #fff;
+      border-bottom-right-radius: 4px;
+      align-self: flex-end;
+    }
+
+    .chat-bubble.assistant {
+      background: var(--color-surface2);
+      color: var(--color-text);
+      border-bottom-left-radius: 4px;
+      align-self: flex-start;
+      border: 1px solid var(--color-border);
+    }
+
+    .chat-time {
+      font-size: 9px;
+      color: var(--color-text-sub);
+      text-align: center;
+      margin: 4px 0;
+    }
+
+    .chat-thread {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      padding: 14px;
+    }
+
+    .chat-thread-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--color-border);
+    }
+
+    .chat-thread-title {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--color-text);
+    }
+
+    .chat-thread-date {
+      font-size: 10px;
+      color: var(--color-text-sub);
+    }
+
+    /* Post mini cards in user detail */
+    .mini-post-card {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      padding: 12px 14px;
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+    }
+
+    .mini-post-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: var(--radius-sm);
+      background: rgba(239,68,68,0.1);
+      border: 1px solid rgba(239,68,68,0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      flex-shrink: 0;
+    }
+
+    .mini-post-info { flex: 1; }
+
+    .mini-post-title {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--color-text);
+      line-height: 1.4;
+    }
+
+    .mini-post-meta {
+      font-size: 10px;
+      color: var(--color-text-muted);
+      margin-top: 4px;
+    }
+
+    /* ============================================================
+       LOGS VIEWER
+    ============================================================ */
+    .logs-panel {
+      background: #0d1117;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+    }
+
+    .logs-toolbar {
+      background: var(--color-surface);
+      border-bottom: 1px solid var(--color-border);
+      padding: 10px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .logs-toolbar-title {
+      font-size: 11px;
+      font-weight: 800;
+      color: var(--color-text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .log-level-filter {
+      display: flex;
+      gap: 4px;
+    }
+
+    .log-filter-btn {
+      font-size: 9px;
+      font-weight: 800;
+      padding: 3px 8px;
+      border-radius: 20px;
+      border: 1px solid var(--color-border);
+      background: transparent;
+      color: var(--color-text-sub);
+      cursor: pointer;
+      font-family: var(--font-family);
+      transition: all 0.15s;
+    }
+    .log-filter-btn.active-all    { border-color: #fff; color: #fff; background: rgba(255,255,255,0.1); }
+    .log-filter-btn.active-info   { border-color: #3b82f6; color: #60a5fa; background: rgba(59,130,246,0.1); }
+    .log-filter-btn.active-warn   { border-color: #f59e0b; color: #fbbf24; background: rgba(245,158,11,0.1); }
+    .log-filter-btn.active-error  { border-color: #ef4444; color: #f87171; background: rgba(239,68,68,0.1); }
+
+    .logs-body {
+      max-height: 280px;
+      overflow-y: auto;
+      font-family: 'Courier New', monospace;
+      font-size: 11px;
+      padding: 10px;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: thin;
+      scrollbar-color: var(--color-border) transparent;
+    }
+    .logs-body::-webkit-scrollbar { width: 4px; }
+    .logs-body::-webkit-scrollbar-track { background: transparent; }
+    .logs-body::-webkit-scrollbar-thumb { background: var(--color-border); border-radius: 2px; }
+
+    .log-line {
+      display: flex;
+      gap: 8px;
+      padding: 3px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.03);
+      line-height: 1.5;
+    }
+    .log-line:last-child { border-bottom: none; }
+
+    .log-time { color: #4b5563; font-size: 10px; flex-shrink: 0; }
+
+    .log-level {
+      font-size: 9px;
+      font-weight: 900;
+      flex-shrink: 0;
+      min-width: 36px;
+      text-align: center;
+      border-radius: 3px;
+      padding: 1px 3px;
+      align-self: flex-start;
+    }
+    .log-level.INFO  { color: #60a5fa; background: rgba(59,130,246,0.15); }
+    .log-level.WARN  { color: #fbbf24; background: rgba(245,158,11,0.15); }
+    .log-level.ERROR { color: #f87171; background: rgba(239,68,68,0.15); }
+    .log-level.DEBUG { color: #a78bfa; background: rgba(167,139,250,0.15); }
+
+    .log-msg { color: #d1d5db; flex: 1; word-break: break-word; }
+
+    /* ============================================================
+       EDIT USER MODAL
+    ============================================================ */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(6px);
+      display: none;
+      align-items: flex-end;
+      justify-content: center;
+      z-index: 9999;
+      padding: 0;
+    }
+
+    .modal-overlay.open {
+      display: flex;
+    }
+
+    .modal-sheet {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: 20px 20px 0 0;
+      width: 100%;
+      max-width: 440px;
+      padding: 0 0 env(safe-area-inset-bottom, 20px) 0;
+      animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    @keyframes slideUp {
+      from { transform: translateY(100%); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+
+    .modal-handle {
+      width: 36px;
+      height: 4px;
+      background: var(--color-border);
+      border-radius: 2px;
+      margin: 12px auto 16px;
+    }
+
+    .modal-title {
+      font-size: 16px;
+      font-weight: 900;
+      color: var(--color-text);
+      padding: 0 20px 12px;
+      border-bottom: 1px solid var(--color-border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .modal-close {
+      background: var(--color-surface2);
+      border: 1px solid var(--color-border);
+      color: var(--color-text-muted);
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 16px;
+      transition: all 0.2s;
+    }
+    .modal-close:hover { color: var(--color-text); background: var(--color-border); }
+
+    .modal-body {
+      padding: 16px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .modal-field label {
+      display: block;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--color-text-muted);
+      margin-bottom: 6px;
+    }
+
+    .modal-input {
+      width: 100%;
+      height: 42px;
+      background: var(--color-surface2);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      color: var(--color-text);
+      font-family: var(--font-family);
+      font-size: 13px;
+      padding: 0 12px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .modal-input:focus { border-color: var(--color-primary); }
+
+    select.modal-input {
+      cursor: pointer;
+      appearance: none;
+    }
+
+    .modal-footer {
+      padding: 0 20px 4px;
+      display: flex;
+      gap: 10px;
+    }
+
+    .btn-cancel {
+      flex: 1;
+      height: 44px;
+      background: var(--color-surface2);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      color: var(--color-text-muted);
+      font-family: var(--font-family);
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-cancel:hover { color: var(--color-text); }
+
+    .btn-save {
+      flex: 2;
+      height: 44px;
+      background: var(--color-primary);
+      border: none;
+      border-radius: var(--radius-md);
+      color: #fff;
+      font-family: var(--font-family);
+      font-size: 13px;
+      font-weight: 800;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: background 0.2s;
+    }
+    .btn-save:hover { background: var(--color-primary-hover); }
+
+    /* ============================================================
+       TOAST
+    ============================================================ */
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(80px);
+      background: #1f2937;
+      border: 1px solid var(--color-border);
+      color: var(--color-text);
+      padding: 10px 20px;
+      border-radius: 30px;
+      font-size: 13px;
+      font-weight: 700;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+      z-index: 99999;
+      transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      white-space: nowrap;
+      max-width: 90vw;
+    }
+    .toast.show {
+      transform: translateX(-50%) translateY(0);
+    }
+
+    /* ============================================================
+       EMPTY STATE
+    ============================================================ */
+    .empty-state {
+      padding: 40px 20px;
+      text-align: center;
+      color: var(--color-text-sub);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+    }
+    .empty-state .es-icon { font-size: 36px; opacity: 0.5; }
+    .empty-state .es-text { font-size: 13px; font-weight: 600; }
+
+    /* ============================================================
+       SECTION LABEL
+    ============================================================ */
+    .section-label {
+      font-size: 10px;
+      font-weight: 800;
+      color: var(--color-text-sub);
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      padding: 0 4px;
+    }
+
+    /* ============================================================
+       ANIMATIONS
+    ============================================================ */
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .tab-pane.active > * {
+      animation: fadeIn 0.25s ease forwards;
+    }
+
+    /* ============================================================
+       PUTER AUTH BUTTON
+    ============================================================ */
+    .puter-btn {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: linear-gradient(135deg, #ef4444, #dc2626);
+      border: none;
+      border-radius: var(--radius-sm);
+      color: #fff;
+      font-family: var(--font-family);
+      font-size: 12px;
+      font-weight: 800;
+      padding: 8px 14px;
+      cursor: pointer;
+      margin-top: 4px;
+      transition: opacity 0.2s;
+    }
+    .puter-btn:hover { opacity: 0.9; }
+
+    /* Hint text below inputs */
+    .input-hint {
+      font-size: 11px;
+      padding: 6px 10px;
+      border-radius: 6px;
+      margin-top: 4px;
+    }
+    .hint-info  { background: rgba(59,130,246,0.1);  color: #60a5fa;  border: 1px solid rgba(59,130,246,0.2); }
+    .hint-ok    { background: rgba(16,185,129,0.1);  color: #34d399;  border: 1px solid rgba(16,185,129,0.2); }
+    .hint-warn  { background: rgba(245,158,11,0.1);  color: #fbbf24;  border: 1px solid rgba(245,158,11,0.2); }
+
+    /* Prompt optimizer link */
+    .secondary-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      height: 44px;
+      background: rgba(16,185,129,0.1);
+      border: 1px solid rgba(16,185,129,0.25);
+      border-radius: var(--radius-md);
+      color: #34d399;
+      font-family: var(--font-family);
+      font-size: 13px;
+      font-weight: 800;
+      text-decoration: none;
+      transition: background 0.2s;
+    }
+    .secondary-btn:hover { background: rgba(16,185,129,0.18); }
+
+  </style>
+</head>
+<body>
+
+  <!-- ============================================================
+       MOBILE FRAME
+  ============================================================ -->
+  <div class="mobile-frame">
+
+    <!-- TOP HEADER -->
+    <header class="app-header">
+      <div class="header-left">
+        <a class="header-back" href="feed.html" title="חזרה לפיד">←</a>
+        <span class="header-title">Karu <span>Admin</span></span>
+      </div>
+      <span class="header-badge">🛡️ PANEL</span>
+    </header>
+
+    <!-- STATS BAR -->
+    <div class="stats-bar">
+      <div class="stat-item">
+        <div class="stat-val" id="val-stat-users">—</div>
+        <div class="stat-lbl">משתמשים</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-val" id="val-stat-posts">—</div>
+        <div class="stat-lbl">קרוסלות</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-val" id="val-stat-tokens">—</div>
+        <div class="stat-lbl">טוקנים</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-val" id="val-stat-pro">—</div>
+        <div class="stat-lbl">פרימיום</div>
+      </div>
+    </div>
+
+    <!-- TAB BAR -->
+    <nav class="tab-bar">
+      <button class="tab-btn active" onclick="switchTab('users')" id="tab-btn-users">
+        <span class="tab-icon">👥</span>
+        משתמשים
+      </button>
+      <button class="tab-btn" onclick="switchTab('carousels')" id="tab-btn-carousels">
+        <span class="tab-icon">🎠</span>
+        קרוסלות
+      </button>
+      <button class="tab-btn" onclick="switchTab('settings')" id="tab-btn-settings">
+        <span class="tab-icon">⚙️</span>
+        הגדרות
+      </button>
+    </nav>
+
+    <!-- CONTENT AREA -->
+    <div class="content-area">
+
+      <!-- ======================================================
+           TAB: USERS
+      ====================================================== -->
+      <div class="tab-pane active" id="pane-users">
+        <!-- Search -->
+        <div class="search-box" style="margin: 12px 0 0 0;">
+          <input type="text" id="user-search" placeholder="חיפוש לפי שם או אימייל..." oninput="filterUsers()">
+          <span class="search-icon">🔍</span>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">
+              <div class="card-title-icon" style="background:rgba(239,68,68,0.1);">👥</div>
+              ניהול משתמשים
+            </div>
+            <span id="users-count-badge" class="badge badge-free">0 משתמשים</span>
+          </div>
+          <div class="user-list" id="users-list-body">
+            <!-- Rendered dynamically -->
+          </div>
+        </div>
+      </div>
+
+      <!-- ======================================================
+           TAB: CAROUSELS
+      ====================================================== -->
+      <div class="tab-pane" id="pane-carousels">
+        <!-- Search -->
+        <div class="search-box" style="margin: 12px 0 0 0;">
+          <input type="text" id="post-search" placeholder="חיפוש לפי יוצר, נושא..." oninput="filterPosts()">
+          <span class="search-icon">🔍</span>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">
+              <div class="card-title-icon" style="background:rgba(239,68,68,0.1);">🎠</div>
+              כל הקרוסלות
+            </div>
+          </div>
+          <div style="padding: 12px 14px; display: flex; flex-direction: column; gap: 10px;" id="posts-list-body">
+            <!-- Rendered dynamically -->
+          </div>
+        </div>
+      </div>
+
+      <!-- ======================================================
+           TAB: SETTINGS
+      ====================================================== -->
+      <div class="tab-pane" id="pane-settings">
+
+        <!-- Active text model -->
+        <div class="model-status-banner">
+          <div class="status-dot"></div>
+          <div class="model-status-text">
+            <strong>⚡ Cloudflare Workers AI — פעיל</strong>
+            <span>@cf/meta/llama-3.3-70b-instruct-fp8-fast</span>
+          </div>
+        </div>
+
+        <!-- Hidden inputs for backward compat -->
+        <input type="hidden" id="admin-provider-select" value="cloudflare">
+        <input type="hidden" id="admin-api-key" value="">
+        <input type="hidden" id="admin-openrouter-key" value="">
+        <input type="hidden" id="admin-model-select" value="@cf/meta/llama-3.3-70b-instruct-fp8-fast">
+
+        <!-- System Prompt -->
+        <div class="settings-group">
+          <div class="settings-row">
+            <div class="settings-label">📝 System Prompt לקרוסלות</div>
+            <div class="settings-desc">ה-Prompt הגלובלי שמשמש לכל יצירת קרוסלה במערכת.</div>
+            <textarea id="admin-system-prompt" class="settings-input" placeholder="הזן כאן את הפרומפט הגלובלי ליצירת קרוסלות..."></textarea>
+          </div>
+        </div>
+
+        <!-- Image Generation Settings -->
+        <div class="section-label">🎨 יצירת תמונות</div>
+        <div class="settings-group">
+          <div class="settings-row">
+            <div class="settings-label">ספק AI לתמונות</div>
+            <select id="admin-image-provider" class="settings-input" onchange="onImageProviderChange()">
+              <option value="puter">Puter.com (GPT Image, FLUX, Grok, Gemini — חינם)</option>
+              <option value="cloudflare">Cloudflare Workers AI (FLUX, SDXL — חינמי)</option>
+              <option value="google">Google AI Studio (Imagen 3.0)</option>
+              <option value="openai">OpenAI (DALL-E 3 / DALL-E 2)</option>
+              <option value="openrouter">OpenRouter (FLUX / Gemini / SDXL)</option>
+              <option value="huggingface">Hugging Face (FLUX.1-schnell)</option>
+            </select>
+          </div>
+
+          <div class="settings-row">
+            <div class="settings-label">מפתח API / טוקן</div>
+            <input type="password" id="admin-image-api-key" class="settings-input" placeholder="הזן מפתח API...">
+            <button type="button" id="btn-puter-login" onclick="openPuterAuthWindow()" class="puter-btn" style="display:none;">
+              🚀 התחבר עם Puter
+            </button>
+            <div id="image-api-key-hint" class="input-hint hint-info" style="display:none;"></div>
+          </div>
+
+          <div class="settings-row">
+            <div class="settings-label">מודל תמונות</div>
+            <select id="admin-image-model-select" class="settings-input" onchange="onImageModelSelectChange()"></select>
+            <input type="text" id="admin-image-model" class="settings-input" style="display:none; margin-top:6px;" placeholder="הזן מזהה מודל ידנית...">
+          </div>
+
+          <div class="settings-row">
+            <div class="settings-label">Image System Prompt</div>
+            <textarea id="admin-image-prompt" class="settings-input" placeholder="הנחיות קבועות לספק התמונות..."></textarea>
+          </div>
+        </div>
+
+        <!-- Actions -->
+        <button id="btn-save-settings" class="save-btn" onclick="saveGlobalSettings()">
+          <span>💾</span>
+          <span id="btn-save-settings-text">שמור הגדרות</span>
+        </button>
+
+        <a href="prompt_optimizer.html" class="secondary-btn">
+          <span>🔄</span>
+          Prompt Optimization Loop
+        </a>
+
+        <div style="height: 16px;"></div>
+      </div>
+
+      <!-- ======================================================
+           USER DETAIL PANEL (SLIDE-IN)
+      ====================================================== -->
+      <div class="detail-panel" id="user-detail-panel">
+        <!-- Detail Header -->
+        <div class="detail-header">
+          <button class="back-btn" onclick="closeUserDetail()">←</button>
+          <div class="detail-user-info">
+            <div class="detail-user-name" id="detail-user-name">—</div>
+            <div class="detail-user-email" id="detail-user-email">—</div>
+          </div>
+          <button class="detail-edit-btn" onclick="openEditModalFromDetail()">✏️ ערוך</button>
+        </div>
+
+        <!-- Detail Sub-Tabs -->
+        <div class="detail-tabs">
+          <button class="detail-tab-btn active" onclick="switchDetailTab('profile')">👤 פרופיל</button>
+          <button class="detail-tab-btn" onclick="switchDetailTab('chats')">💬 צ'אטים</button>
+          <button class="detail-tab-btn" onclick="switchDetailTab('posts')">📸 פוסטים</button>
+          <button class="detail-tab-btn" onclick="switchDetailTab('logs')">📋 לוגים</button>
+        </div>
+
+        <!-- Detail Scrollable Body -->
+        <div class="detail-body">
+
+          <!-- Profile Tab -->
+          <div class="detail-tab-pane active" id="detail-tab-profile">
+            <div class="profile-hero">
+              <div class="profile-avatar-large" id="detail-avatar-initials">R</div>
+              <div>
+                <div style="font-size: 16px; font-weight: 900; color: var(--color-text);" id="detail-profile-name">—</div>
+                <div style="font-size: 12px; color: var(--color-text-muted); margin-top: 2px; direction: ltr;" id="detail-profile-email">—</div>
+              </div>
+              <div class="profile-badges">
+                <span id="detail-badge-role" class="badge badge-user">User</span>
+                <span id="detail-badge-sub" class="badge badge-free">Free</span>
+              </div>
+            </div>
+
+            <div class="profile-stats-grid">
+              <div class="profile-stat">
+                <div class="ps-val" id="detail-stat-posts">0</div>
+                <div class="ps-lbl">קרוסלות</div>
+              </div>
+              <div class="profile-stat">
+                <div class="ps-val" id="detail-stat-posts-left">0</div>
+                <div class="ps-lbl">פוסטים שנותרו</div>
+              </div>
+              <div class="profile-stat">
+                <div class="ps-val" id="detail-stat-tokens">0</div>
+                <div class="ps-lbl">טוקנים</div>
+              </div>
+            </div>
+
+            <!-- User info rows -->
+            <div class="settings-group">
+              <div class="settings-row" style="flex-direction: row; align-items: center;">
+                <div class="settings-label" style="flex:1;">🆔 מזהה משתמש</div>
+                <div style="font-size: 11px; color: var(--color-text-muted); font-family: monospace;" id="detail-info-id">—</div>
+              </div>
+              <div class="settings-row" style="flex-direction: row; align-items: center;">
+                <div class="settings-label" style="flex:1;">📅 תאריך הצטרפות</div>
+                <div style="font-size: 11px; color: var(--color-text-muted);" id="detail-info-joined">—</div>
+              </div>
+              <div class="settings-row" style="flex-direction: row; align-items: center;">
+                <div class="settings-label" style="flex:1;">🌍 שפה</div>
+                <div style="font-size: 11px; color: var(--color-text-muted);" id="detail-info-lang">עברית</div>
+              </div>
+              <div class="settings-row" style="flex-direction: row; align-items: center;">
+                <div class="settings-label" style="flex:1;">📲 פרסום אוטומטי</div>
+                <div style="font-size: 11px; color: var(--color-text-muted);" id="detail-info-autopost">לא מופעל</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Chats Tab -->
+          <div class="detail-tab-pane" id="detail-tab-chats">
+            <div id="detail-chats-list">
+              <!-- Rendered dynamically -->
+            </div>
+          </div>
+
+          <!-- Posts Tab -->
+          <div class="detail-tab-pane" id="detail-tab-posts">
+            <div id="detail-posts-list" style="display:flex; flex-direction:column; gap:10px;">
+              <!-- Rendered dynamically -->
+            </div>
+          </div>
+
+          <!-- Logs Tab -->
+          <div class="detail-tab-pane" id="detail-tab-logs">
+            <div class="logs-panel">
+              <div class="logs-toolbar">
+                <div class="logs-toolbar-title">
+                  <span style="width:8px;height:8px;border-radius:50%;background:var(--color-success);display:inline-block;box-shadow:0 0 6px rgba(16,185,129,0.6);"></span>
+                  Server Logs
+                </div>
+                <div class="log-level-filter">
+                  <button class="log-filter-btn active-all" onclick="filterLogs('ALL', this)">ALL</button>
+                  <button class="log-filter-btn" onclick="filterLogs('INFO', this)">INFO</button>
+                  <button class="log-filter-btn" onclick="filterLogs('WARN', this)">WARN</button>
+                  <button class="log-filter-btn" onclick="filterLogs('ERROR', this)">ERR</button>
+                </div>
+              </div>
+              <div class="logs-body" id="user-logs-body">
+                <!-- Logs rendered by JS -->
+              </div>
+            </div>
+            <div style="font-size:10px; color:var(--color-text-sub); text-align:center; padding: 4px 0 8px;">
+              מציג לוגים אחרונים (UI בלבד — נתונים לדוגמה)
+            </div>
+          </div>
+
+        </div><!-- /detail-body -->
+      </div><!-- /user-detail-panel -->
+
+    </div><!-- /content-area -->
+  </div><!-- /mobile-frame -->
+
+  <!-- ============================================================
+       EDIT USER MODAL (BOTTOM SHEET)
+  ============================================================ -->
+  <div id="edit-user-modal" class="modal-overlay" onclick="handleModalBackdropClick(event)">
+    <div class="modal-sheet">
+      <div class="modal-handle"></div>
+      <div class="modal-title">
+        <span>✏️ עריכת משתמש</span>
+        <button class="modal-close" onclick="closeEditUserModal()">×</button>
+      </div>
+      <div style="padding: 8px 20px 6px; font-size: 12px; color: var(--color-text-muted);">
+        <span id="modal-user-name" style="font-weight:800; color:var(--color-text);"></span>
+        · <span id="modal-user-email" style="font-family:monospace;direction:ltr;"></span>
+      </div>
+      <div class="modal-body">
+        <div class="modal-field">
+          <label id="lbl-modal-role">הרשאת מערכת (Role)</label>
+          <select id="modal-user-role" class="modal-input">
+            <option value="user">משתמש רגיל (User)</option>
+            <option value="admin">מנהל מערכת (Admin 🛡️)</option>
+          </select>
+        </div>
+        <div class="modal-field">
+          <label id="lbl-modal-subscription">תוכנית מנוי</label>
+          <select id="modal-user-subscription" class="modal-input">
+            <option value="free">חינמי — Free (3 פוסטים)</option>
+            <option value="basic">בסיסי — Basic (20 פוסטים)</option>
+            <option value="pro">פרו — Pro (50 פוסטים)</option>
+            <option value="agency">סוכנות — Agency (100 פוסטים)</option>
+          </select>
+        </div>
+        <div class="modal-field">
+          <label id="lbl-modal-posts-left">פוסטים שנותרו</label>
+          <input type="number" id="modal-user-posts-left" class="modal-input" min="0">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-cancel" onclick="closeEditUserModal()">
+          <span id="lbl-modal-cancel">ביטול</span>
+        </button>
+        <button class="btn-save" id="btn-modal-save" onclick="saveUserFromModal()">
+          <span>💾</span>
+          <span id="lbl-modal-save">שמור שינויים</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST -->
+  <div class="toast" id="toast-message"></div>
+
+  <script>
+
+    // ============================================================
+    // Global fetch interceptor for JWT
+    // ============================================================
+    (function() {
+      const originalFetch = window.fetch;
+      window.fetch = function(url, options = {}) {
+        options = options || {};
+        options.credentials = 'same-origin';
+        const token = localStorage.getItem('authToken');
+        if (token) {
+          options.headers = options.headers || {};
+          if (options.headers instanceof Headers) {
+            if (!options.headers.has('authorization'))
+              options.headers.append('authorization', 'Bearer ' + token);
+          } else {
+            options.headers['authorization'] = 'Bearer ' + token;
+          }
+        }
+        return originalFetch(url, options);
+      };
+    })();
+
+    // ============================================================
+    // State
+    // ============================================================
+    let usersDb = [
+      { id: 'u1', username: 'Roi Chocron',  email: 'roi@karu.ai',                 subscription: 'pro',    posts_left: 45, role: 'admin' },
+      { id: 'u2', username: 'Alon Levi',    email: 'alon.l@gmail.com',             subscription: 'basic',  posts_left: 18, role: 'user'  },
+      { id: 'u3', username: 'Dana Cohen',   email: 'dana.cohen@outlook.com',       subscription: 'free',   posts_left: 1,  role: 'user'  },
+      { id: 'u4', username: 'Michael G.',   email: 'm.green@startup.io',           subscription: 'agency', posts_left: 88, role: 'user'  },
+      { id: 'u5', username: 'Shir Zohar',   email: 'shirz@netvision.net.il',       subscription: 'free',   posts_left: 3,  role: 'user'  },
+      { id: 'u6', username: 'Guy Avram',    email: 'guy.a@agency-clicks.co.il',    subscription: 'pro',    posts_left: 34, role: 'user'  }
+    ];
+
+    let postsDb = [
+      { id: 'p101', username: 'Roi Chocron',  title: '5 Growth Hacks for Startups',                     date: '08/08/2026', tokens: { prompt: 1450, save: 850,  autopost: 1200 } },
+      { id: 'p102', username: 'Roi Chocron',  title: 'How to scale a Node.js API to 1M requests',       date: '08/08/2026', tokens: { prompt: 1800, save: 920,  autopost: 1200 } },
+      { id: 'p103', username: 'Alon Levi',    title: 'Critical Mistakes First-Time Home Buyers Make',   date: '07/08/2026', tokens: { prompt: 1200, save: 710,  autopost: 0    } },
+      { id: 'p104', username: 'Dana Cohen',   title: 'Weekly Meal Plan in 10 Minutes',                  date: '06/08/2026', tokens: { prompt: 1150, save: 640,  autopost: 0    } },
+      { id: 'p105', username: 'Michael G.',   title: '10 UI Tricks to improve web app conversions',     date: '05/08/2026', tokens: { prompt: 1950, save: 1100, autopost: 1200 } },
+      { id: 'p106', username: 'Guy Avram',    title: 'Organic SEO Guide for Google 2026',               date: '04/08/2026', tokens: { prompt: 1600, save: 890,  autopost: 1200 } },
+      { id: 'p107', username: 'Shir Zohar',   title: 'Interior Design Tips for Small Living Rooms',     date: '02/08/2026', tokens: { prompt: 980,  save: 540,  autopost: 0    } }
+    ];
+
+    // Fake logs data per user (for UI demo)
+    const fakeLogsDb = {
+      u1: [
+        { time: '22:04:11', level: 'INFO',  msg: 'User logged in from IP 212.34.x.x' },
+        { time: '22:04:15', level: 'INFO',  msg: 'GET /api/posts — 200 OK (34ms)' },
+        { time: '22:04:22', level: 'INFO',  msg: 'POST /api/generate-carousel — 200 OK (1.8s)' },
+        { time: '22:05:01', level: 'DEBUG', msg: 'LLM call: tokens_in=812, tokens_out=1450' },
+        { time: '22:05:03', level: 'INFO',  msg: 'Image generation started via Cloudflare FLUX.2' },
+        { time: '22:05:09', level: 'INFO',  msg: 'Image generation complete (5 slides)' },
+        { time: '22:05:10', level: 'INFO',  msg: 'POST /api/posts/save — 201 Created (21ms)' },
+        { time: '22:07:30', level: 'WARN',  msg: 'Rate limit approaching: 87/100 requests today' },
+        { time: '22:08:00', level: 'INFO',  msg: 'User session refreshed (JWT renewed)' },
+      ],
+      u2: [
+        { time: '21:55:04', level: 'INFO',  msg: 'User logged in from IP 82.80.x.x' },
+        { time: '21:55:12', level: 'INFO',  msg: 'GET /api/feed — 200 OK (12ms)' },
+        { time: '21:56:30', level: 'INFO',  msg: 'POST /api/generate-carousel — 200 OK (2.1s)' },
+        { time: '21:57:01', level: 'DEBUG', msg: 'LLM call: tokens_in=745, tokens_out=1200' },
+        { time: '21:57:05', level: 'WARN',  msg: 'Image provider API key expiring soon' },
+        { time: '21:58:44', level: 'INFO',  msg: 'POST /api/posts/save — 201 Created (18ms)' },
+      ],
+      u3: [
+        { time: '20:30:11', level: 'INFO',  msg: 'User registered new account' },
+        { time: '20:30:14', level: 'INFO',  msg: 'Welcome email sent to dana.cohen@outlook.com' },
+        { time: '20:31:05', level: 'INFO',  msg: 'GET /api/profile — 200 OK (8ms)' },
+        { time: '20:31:50', level: 'ERROR', msg: 'POST /api/generate-carousel — 403 Forbidden (posts_left=0)' },
+        { time: '20:31:52', level: 'WARN',  msg: 'User reached free plan post limit' },
+      ],
+      u4: [
+        { time: '19:00:22', level: 'INFO',  msg: 'User logged in (Agency plan)' },
+        { time: '19:01:10', level: 'INFO',  msg: 'Bulk carousel generation started (10 posts)' },
+        { time: '19:01:55', level: 'INFO',  msg: 'Auto-post to Instagram: @michaelg.growth — Success' },
+        { time: '19:02:12', level: 'INFO',  msg: 'Auto-post to LinkedIn — Success' },
+        { time: '19:03:00', level: 'DEBUG', msg: 'Scheduler: next autopost in 23h 57m' },
+        { time: '19:05:00', level: 'WARN',  msg: 'Puter.com token refresh required in 24h' },
+      ],
+      u5: [
+        { time: '18:15:30', level: 'INFO',  msg: 'User logged in from mobile device (iOS)' },
+        { time: '18:15:45', level: 'INFO',  msg: 'GET /api/feed — 200 OK (22ms)' },
+        { time: '18:16:20', level: 'INFO',  msg: 'POST /api/generate-carousel — 200 OK (1.6s)' },
+        { time: '18:16:25', level: 'INFO',  msg: 'Image saved successfully' },
+      ],
+      u6: [
+        { time: '17:44:00', level: 'INFO',  msg: 'User logged in (Pro plan)' },
+        { time: '17:44:30', level: 'INFO',  msg: 'POST /api/generate-carousel — 200 OK (1.9s)' },
+        { time: '17:44:55', level: 'INFO',  msg: 'Auto-post to Instagram: @guyavram.agency — Success' },
+        { time: '17:45:10', level: 'ERROR', msg: 'LinkedIn auto-post failed: token expired' },
+        { time: '17:45:12', level: 'WARN',  msg: 'Retrying LinkedIn auto-post (attempt 2/3)' },
+        { time: '17:45:18', level: 'INFO',  msg: 'LinkedIn auto-post succeeded on retry' },
+      ]
+    };
+
+    // Fake chat threads per user
+    const fakeChatsDb = {
+      u1: [
+        {
+          id: 'c1', date: '08/08/2026 22:04', topic: 'Growth hacks for startups',
+          messages: [
+            { role: 'user', text: 'צור לי קרוסלה על 5 growth hacks לסטארטאפים' },
+            { role: 'assistant', text: 'בשמחה! הנה קרוסלה מרהיבה על 5 Growth Hacks לסטארטאפים עם טיפים אקשנבלים...' },
+          ]
+        },
+        {
+          id: 'c2', date: '07/08/2026 18:30', topic: 'Node.js scalability',
+          messages: [
+            { role: 'user', text: 'איך לסקל Node.js API ל-1M requests?' },
+            { role: 'assistant', text: 'נושא מצוין! הנה קרוסלה מפורטת על scalability ב-Node.js...' },
+          ]
+        }
+      ],
+      u2: [
+        {
+          id: 'c3', date: '07/08/2026 21:55', topic: 'Home buying mistakes',
+          messages: [
+            { role: 'user', text: 'תעשה פוסט על טעויות של קוני דירה ראשונה' },
+            { role: 'assistant', text: 'בהחלט! הכנתי קרוסלה על 7 הטעויות הנפוצות ביותר...' },
+          ]
+        }
+      ],
+      u3: [
+        {
+          id: 'c4', date: '06/08/2026 20:30', topic: 'Meal prep tips',
+          messages: [
+            { role: 'user', text: 'מתכון שבועי ב-10 דקות' },
+            { role: 'assistant', text: 'מושלם! הנה מדריך שבועי מהיר בקרוסלה אטרקטיבית...' },
+          ]
+        }
+      ],
+      u4: [], u5: [], u6: []
+    };
+
+    // ============================================================
+    // TABS
+    // ============================================================
+    function switchTab(tabName) {
+      document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.getElementById('pane-' + tabName).classList.add('active');
+      document.getElementById('tab-btn-' + tabName).classList.add('active');
+    }
+
+    // ============================================================
+    // USER LIST
+    // ============================================================
+    function renderUsersList(data) {
+      const body = document.getElementById('users-list-body');
+      const countBadge = document.getElementById('users-count-badge');
+      if (!body) return;
+      body.innerHTML = '';
+      const list = Array.isArray(data) ? data : [];
+      if (countBadge) countBadge.textContent = list.length + ' משתמשים';
+
+      if (list.length === 0) {
+        body.innerHTML = `<div class="empty-state"><div class="es-icon">👤</div><div class="es-text">לא נמצאו משתמשים</div></div>`;
+        return;
+      }
+
+      list.forEach(user => {
+        if (!user) return;
+        const initials = (user.username || 'A').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
+        const sub = (user.subscription || 'free').toLowerCase();
+
+        const item = document.createElement('div');
+        item.className = 'user-item';
+        item.onclick = () => openUserDetail(user.id);
+        item.innerHTML = `
+          <div class="user-avatar">${initials}</div>
+          <div class="user-info">
+            <div class="user-name">${user.username || 'Anonymous'}</div>
+            <div class="user-email">${user.email || ''}</div>
+          </div>
+          <div class="user-meta">
+            <span class="badge badge-${sub}">${subLabel(sub)}</span>
+            ${user.role === 'admin' ? '<span class="badge badge-admin">Admin 🛡️</span>' : ''}
+            <span class="chevron">›</span>
+          </div>
+        `;
+        body.appendChild(item);
+      });
+    }
+
+    function subLabel(sub) {
+      const map = { free: 'Free', basic: 'Basic', pro: 'Pro', agency: 'Agency' };
+      return map[sub] || sub;
+    }
+
+    function filterUsers() {
+      const q = document.getElementById('user-search').value.toLowerCase();
+      const filtered = usersDb.filter(u =>
+        (u.username || '').toLowerCase().includes(q) ||
+        (u.email || '').toLowerCase().includes(q)
+      );
+      renderUsersList(filtered);
+    }
+
+    // ============================================================
+    // POSTS LIST
+    // ============================================================
+    function renderPostsList(data) {
+      const body = document.getElementById('posts-list-body');
+      if (!body) return;
+      body.innerHTML = '';
+      const list = Array.isArray(data) ? data : [];
+
+      if (list.length === 0) {
+        body.innerHTML = `<div class="empty-state"><div class="es-icon">🎠</div><div class="es-text">לא נמצאו קרוסלות</div></div>`;
+        return;
+      }
+
+      list.forEach(post => {
+        if (!post) return;
+        const p = Number(post?.tokens?.prompt) || 0;
+        const s = Number(post?.tokens?.save) || 0;
+        const a = Number(post?.tokens?.autopost) || 0;
+        const total = p + s + a;
+
+        const card = document.createElement('div');
+        card.className = 'post-card';
+        card.innerHTML = `
+          <div class="post-card-header">
+            <div class="post-card-title">${post.title || 'ללא כותרת'}</div>
+            <button class="delete-btn" onclick="deletePostAdmin('${post.id}')">🗑️</button>
+          </div>
+          <div class="post-card-meta">
+            <span>👤 ${post.username || 'אנונימי'}</span>
+            <span>📅 ${post.date || ''}</span>
+          </div>
+          <div style="display:flex; align-items:center; justify-content:space-between;">
+            <div class="token-chips">
+              <span class="token-chip tc-send">Send: ${p}</span>
+              <span class="token-chip tc-save">Save: ${s}</span>
+              ${a ? `<span class="token-chip tc-autopost">Auto: ${a}</span>` : ''}
+            </div>
+            <span class="post-total-tokens">⚡ ${total.toLocaleString()}</span>
+          </div>
+        `;
+        body.appendChild(card);
+      });
+    }
+
+    function filterPosts() {
+      const q = document.getElementById('post-search').value.toLowerCase();
+      const filtered = postsDb.filter(p =>
+        (p.username || '').toLowerCase().includes(q) ||
+        (p.title || '').toLowerCase().includes(q)
+      );
+      renderPostsList(filtered);
+    }
+
+    // ============================================================
+    // STATS
+    // ============================================================
+    function renderStats() {
+      const usersList = Array.isArray(usersDb) ? usersDb : [];
+      const postsList = Array.isArray(postsDb) ? postsDb : [];
+
+      const setVal = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+
+      setVal('val-stat-users', usersList.length);
+      setVal('val-stat-posts', postsList.length);
+
+      let total = 0;
+      postsList.forEach(p => {
+        total += (Number(p?.tokens?.prompt) || 0) + (Number(p?.tokens?.save) || 0) + (Number(p?.tokens?.autopost) || 0);
+      });
+      // Format tokens compactly
+      const tokStr = total >= 1000 ? (total / 1000).toFixed(1) + 'k' : total;
+      setVal('val-stat-tokens', tokStr);
+      setVal('val-stat-pro', usersList.filter(u => u?.subscription === 'pro' || u?.subscription === 'agency').length);
+    }
+
+    // ============================================================
+    // USER DETAIL PANEL
+    // ============================================================
+    let currentDetailUserId = null;
+    let activeDetailTab = 'profile';
+    let currentLogFilter = 'ALL';
+
+    function openUserDetail(userId) {
+      const user = usersDb.find(u => u.id === userId);
+      if (!user) return;
+      currentDetailUserId = userId;
+
+      // Set header info
+      document.getElementById('detail-user-name').textContent = user.username || 'Anonymous';
+      document.getElementById('detail-user-email').textContent = user.email || '';
+
+      // Profile tab
+      const initials = (user.username || 'A').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
+      document.getElementById('detail-avatar-initials').textContent = initials;
+      document.getElementById('detail-profile-name').textContent = user.username || 'Anonymous';
+      document.getElementById('detail-profile-email').textContent = user.email || '';
+
+      const sub = (user.subscription || 'free').toLowerCase();
+      document.getElementById('detail-badge-role').className = 'badge ' + (user.role === 'admin' ? 'badge-admin' : 'badge-user');
+      document.getElementById('detail-badge-role').textContent = user.role === 'admin' ? 'Admin 🛡️' : 'User';
+      document.getElementById('detail-badge-sub').className = 'badge badge-' + sub;
+      document.getElementById('detail-badge-sub').textContent = subLabel(sub);
+
+      // Count user's posts & tokens
+      const userPosts = postsDb.filter(p => p.username === user.username);
+      let userTokens = 0;
+      userPosts.forEach(p => {
+        userTokens += (Number(p?.tokens?.prompt) || 0) + (Number(p?.tokens?.save) || 0) + (Number(p?.tokens?.autopost) || 0);
+      });
+      document.getElementById('detail-stat-posts').textContent = userPosts.length;
+      document.getElementById('detail-stat-posts-left').textContent = user.posts_left ?? 0;
+      document.getElementById('detail-stat-tokens').textContent = userTokens >= 1000 ? (userTokens / 1000).toFixed(1) + 'k' : userTokens;
+
+      document.getElementById('detail-info-id').textContent = user.id;
+      document.getElementById('detail-info-joined').textContent = '01/08/2026'; // mock
+      document.getElementById('detail-info-lang').textContent = 'עברית';
+      document.getElementById('detail-info-autopost').textContent = sub === 'pro' || sub === 'agency' ? '✅ מופעל' : '⛔ לא מופעל';
+
+      // Render chats
+      renderDetailChats(user);
+      // Render posts
+      renderDetailPosts(user);
+      // Render logs
+      currentLogFilter = 'ALL';
+      renderDetailLogs(userId);
+
+      // Switch to profile sub-tab
+      switchDetailTab('profile');
+
+      // Open panel
+      document.getElementById('user-detail-panel').classList.add('open');
+    }
+
+    function closeUserDetail() {
+      document.getElementById('user-detail-panel').classList.remove('open');
+      currentDetailUserId = null;
+    }
+
+    function switchDetailTab(tabName) {
+      activeDetailTab = tabName;
+      document.querySelectorAll('.detail-tab-btn').forEach(b => {
+        const onclick = b.getAttribute('onclick') || '';
+        b.classList.toggle('active', onclick.includes("'" + tabName + "'"));
+      });
+      document.querySelectorAll('.detail-tab-pane').forEach(p => p.classList.remove('active'));
+      const pane = document.getElementById('detail-tab-' + tabName);
+      if (pane) pane.classList.add('active');
+    }
+
+    function renderDetailChats(user) {
+      const container = document.getElementById('detail-chats-list');
+      if (!container) return;
+      const threads = fakeChatsDb[user.id] || [];
+      if (threads.length === 0) {
+        container.innerHTML = `<div class="empty-state"><div class="es-icon">💬</div><div class="es-text">אין צ'אטים למשתמש זה</div></div>`;
+        return;
+      }
+      container.innerHTML = '';
+      threads.forEach(thread => {
+        const div = document.createElement('div');
+        div.className = 'chat-thread';
+        div.style.marginBottom = '12px';
+        const msgs = thread.messages.map(m => `
+          <div style="display:flex; justify-content:${m.role === 'user' ? 'flex-end' : 'flex-start'}; margin-bottom:4px;">
+            <div class="chat-bubble ${m.role === 'user' ? 'user' : 'assistant'}">${m.text}</div>
+          </div>
+        `).join('');
+        div.innerHTML = `
+          <div class="chat-thread-header">
+            <div class="chat-thread-title">💬 ${thread.topic}</div>
+            <div class="chat-thread-date">${thread.date}</div>
+          </div>
+          ${msgs}
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    function renderDetailPosts(user) {
+      const container = document.getElementById('detail-posts-list');
+      if (!container) return;
+      const userPosts = postsDb.filter(p => p.username === user.username);
+      if (userPosts.length === 0) {
+        container.innerHTML = `<div class="empty-state"><div class="es-icon">📸</div><div class="es-text">אין פוסטים למשתמש זה</div></div>`;
+        return;
+      }
+      container.innerHTML = '';
+      userPosts.forEach(post => {
+        const p = Number(post?.tokens?.prompt) || 0;
+        const s = Number(post?.tokens?.save) || 0;
+        const a = Number(post?.tokens?.autopost) || 0;
+        const total = p + s + a;
+        const card = document.createElement('div');
+        card.className = 'mini-post-card';
+        card.innerHTML = `
+          <div class="mini-post-icon">🎠</div>
+          <div class="mini-post-info">
+            <div class="mini-post-title">${post.title || 'ללא כותרת'}</div>
+            <div class="mini-post-meta">
+              📅 ${post.date}  &nbsp;⚡ ${total.toLocaleString()} טוקנים
+            </div>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    function renderDetailLogs(userId) {
+      const body = document.getElementById('user-logs-body');
+      if (!body) return;
+      const logs = fakeLogsDb[userId] || [];
+      const filtered = currentLogFilter === 'ALL' ? logs : logs.filter(l => l.level === currentLogFilter);
+
+      if (filtered.length === 0) {
+        body.innerHTML = `<div style="color:var(--color-text-sub);padding:20px;text-align:center;font-size:11px;">אין לוגים להצגה</div>`;
+        return;
+      }
+
+      body.innerHTML = filtered.map(log => `
+        <div class="log-line">
+          <span class="log-time">${log.time}</span>
+          <span class="log-level ${log.level}">${log.level}</span>
+          <span class="log-msg">${log.msg}</span>
+        </div>
+      `).join('');
+
+      // Scroll to bottom
+      body.scrollTop = body.scrollHeight;
+    }
+
+    function filterLogs(level, btn) {
+      currentLogFilter = level;
+      document.querySelectorAll('.log-filter-btn').forEach(b => {
+        b.className = 'log-filter-btn';
+      });
+      if (btn) {
+        const classMap = { ALL: 'active-all', INFO: 'active-info', WARN: 'active-warn', ERROR: 'active-error' };
+        btn.classList.add(classMap[level] || 'active-all');
+      }
+      renderDetailLogs(currentDetailUserId);
+    }
+
+    // ============================================================
+    // EDIT USER MODAL
+    // ============================================================
+    let editingUserId = null;
+
+    function openEditUserModal(userId) {
+      const user = usersDb.find(u => u.id === userId);
+      if (!user) return;
+      editingUserId = userId;
+
+      document.getElementById('modal-user-name').textContent = user.username || 'Anonymous';
+      document.getElementById('modal-user-email').textContent = user.email || '';
+      document.getElementById('modal-user-role').value = user.role || 'user';
+      document.getElementById('modal-user-subscription').value = (user.subscription || 'free').toLowerCase();
+      document.getElementById('modal-user-posts-left').value = user.posts_left ?? 0;
+
+      document.getElementById('edit-user-modal').classList.add('open');
+    }
+
+    function openEditModalFromDetail() {
+      if (currentDetailUserId) openEditUserModal(currentDetailUserId);
+    }
+
+    function closeEditUserModal() {
+      document.getElementById('edit-user-modal').classList.remove('open');
+      editingUserId = null;
+    }
+
+    function handleModalBackdropClick(e) {
+      if (e.target === document.getElementById('edit-user-modal')) closeEditUserModal();
+    }
+
+    async function saveUserFromModal() {
+      if (!editingUserId) return;
+      const user = usersDb.find(u => u.id === editingUserId);
+      if (!user) return;
+
+      const newRole  = document.getElementById('modal-user-role').value || 'user';
+      const newSub   = document.getElementById('modal-user-subscription').value || 'free';
+      const newPosts = parseInt(document.getElementById('modal-user-posts-left').value) || 0;
+
+      const btn = document.getElementById('btn-modal-save');
+      const origHTML = btn ? btn.innerHTML : '';
+      if (btn) { btn.disabled = true; btn.innerHTML = '<span>⏳</span> <span>שומר...</span>'; }
+
+      try {
+        if (newRole !== (user.role || 'user')) {
+          const r = await fetch(`/api/users/${editingUserId}/role`, {
+            method: 'PUT', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ role: newRole })
+          });
+          if (!r.ok) throw new Error((await r.json().catch(()=>({}))).error || 'Failed to update role');
+          user.role = newRole;
+        }
+
+        if (newSub !== (user.subscription || 'free').toLowerCase()) {
+          const r = await fetch(`/api/users/${editingUserId}/subscription`, {
+            method: 'PUT', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ subscription: newSub })
+          });
+          if (!r.ok) throw new Error((await r.json().catch(()=>({}))).error || 'Failed to update subscription');
+          const d = await r.json();
+          user.subscription = newSub;
+          user.posts_left = d.posts_left;
+          try {
+            const cur = JSON.parse(localStorage.getItem('currentUser') || '{}');
+            if (cur && (cur.id === editingUserId || cur.email === user.email)) {
+              cur.subscription = newSub; cur.posts_left = d.posts_left;
+              localStorage.setItem('currentUser', JSON.stringify(cur));
+            }
+          } catch(e) {}
+        }
+
+        if (newPosts !== user.posts_left) {
+          const r = await fetch(`/api/users/${editingUserId}/posts-left`, {
+            method: 'PUT', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ posts_left: newPosts })
+          });
+          if (!r.ok) throw new Error((await r.json().catch(()=>({}))).error || 'Failed to update posts');
+          user.posts_left = newPosts;
+        }
+
+        closeEditUserModal();
+        renderStats();
+        renderUsersList(usersDb);
+        // If detail panel is open, refresh it
+        if (currentDetailUserId === editingUserId) openUserDetail(editingUserId);
+        showToast('✅ פרטי המשתמש עודכנו בהצלחה!');
+
+      } catch (err) {
+        showToast('❌ ' + (err.message || 'שגיאה בשמירה'));
+      } finally {
+        if (btn) { btn.disabled = false; btn.innerHTML = origHTML; }
+      }
+    }
+
+    window.addEventListener('keydown', e => { if (e.key === 'Escape') closeEditUserModal(); });
+
+    // ============================================================
+    // SETTINGS — SAVE
+    // ============================================================
+    async function saveGlobalSettings() {
+      const systemPrompt        = document.getElementById('admin-system-prompt')?.value || '';
+      const imageActiveProvider = document.getElementById('admin-image-provider')?.value || 'puter';
+      const imageApiKey         = document.getElementById('admin-image-api-key')?.value.trim() || '';
+      const imageSystemPrompt   = document.getElementById('admin-image-prompt')?.value || '';
+      let imageGenModel         = document.getElementById('admin-image-model')?.value.trim() || '';
+      const imageModelSelect    = document.getElementById('admin-image-model-select')?.value;
+      if (!imageGenModel && imageModelSelect && imageModelSelect !== 'custom') imageGenModel = imageModelSelect;
+      const puterAuthToken = imageActiveProvider === 'puter' ? imageApiKey : undefined;
+
+      const btn = document.getElementById('btn-save-settings');
+      const origTxt = document.getElementById('btn-save-settings-text')?.textContent;
+      if (btn) btn.disabled = true;
+      if (document.getElementById('btn-save-settings-text')) document.getElementById('btn-save-settings-text').textContent = 'שומר...';
+
+      try {
+        const r = await fetch('/api/admin/settings', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            systemPrompt, system_prompt: systemPrompt,
+            imageActiveProvider, image_active_provider: imageActiveProvider,
+            imageApiKey, image_api_key: imageApiKey,
+            imageGenModel, image_gen_model: imageGenModel,
+            imageSystemPrompt, image_system_prompt: imageSystemPrompt,
+            puterAuthToken, puter_auth_token: puterAuthToken,
+            apiKey: '', selectedModel: '@cf/meta/llama-3.3-70b-instruct-fp8-fast',
+            activeProvider: 'cloudflare'
+          })
+        });
+        if (!r.ok) throw new Error('Error saving settings');
+        showToast('✅ הגדרות נשמרו בהצלחה!');
+      } catch (err) {
+        showToast('❌ ' + err.message);
+      } finally {
+        if (btn) btn.disabled = false;
+        if (document.getElementById('btn-save-settings-text')) document.getElementById('btn-save-settings-text').textContent = origTxt;
+      }
+    }
+
+    // ============================================================
+    // IMAGE PROVIDER LOGIC (preserved)
+    // ============================================================
+    function onImageModelSelectChange() {
+      const sel = document.getElementById('admin-image-model-select');
+      const inp = document.getElementById('admin-image-model');
+      if (sel.value === 'custom') { inp.style.display = 'block'; inp.focus(); }
+      else { inp.style.display = 'none'; inp.value = sel.value; }
+    }
+
+    async function openPuterAuthWindow() {
+      if (typeof puter === 'undefined') { showToast('Puter SDK טוען, נסה שוב עוד שנייה.'); return; }
+      const hint = document.getElementById('image-api-key-hint');
+      if (hint) { hint.style.display = 'block'; hint.className = 'input-hint hint-info'; hint.innerHTML = '⏳ פותח חלון אימות Puter...'; }
+      try {
+        const res = await puter.auth.signIn({ request_auth: true });
+        const token = puter.authToken || res?.token;
+        if (token) {
+          document.getElementById('admin-image-api-key').value = token;
+          let userStr = '';
+          try { const u = await puter.auth.getUser(); if (u?.username) userStr = ` (${u.username})`; } catch(e) {}
+          if (hint) { hint.className = 'input-hint hint-ok'; hint.innerHTML = `✅ מחובר לחשבון Puter${userStr}!`; }
+          showToast('✅ אימות Puter הצליח!');
+          await saveGlobalSettings();
+        }
+      } catch (err) {
+        if (err?.error === 'popup_blocked') {
+          if (hint) { hint.className = 'input-hint hint-warn'; hint.innerHTML = '⚠️ חלון נחסם — אפשר Popups בדפדפן.'; }
+        } else if (err?.error !== 'auth_window_closed') {
+          showToast('❌ שגיאה: ' + (err?.msg || JSON.stringify(err)));
+        }
+      }
+    }
+
+    function onImageProviderChange() {
+      const provider = document.getElementById('admin-image-provider').value;
+      const keyInput = document.getElementById('admin-image-api-key');
+      const modelSelect = document.getElementById('admin-image-model-select');
+      const customInput = document.getElementById('admin-image-model');
+      const hint = document.getElementById('image-api-key-hint');
+      const btnPuter = document.getElementById('btn-puter-login');
+
+      let models = [];
+      if (provider === 'cloudflare') {
+        if (btnPuter) btnPuter.style.display = 'none';
+        keyInput.placeholder = 'לא נדרש מפתח לשירות החינמי...';
+        if (hint) { hint.style.display = 'block'; hint.className = 'input-hint hint-ok'; hint.innerHTML = '⚡ מחובר ל-Cloudflare Workers AI חינמי.'; }
+        models = [
+          { val: '@cf/black-forest-labs/flux-2-dev', desc: 'FLUX.2 Dev (32B — פוטוריאליסטי)' },
+          { val: '@cf/black-forest-labs/flux-1-schnell', desc: 'FLUX.1 Schnell (מהיר ואיכותי)' },
+          { val: '@cf/stabilityai/stable-diffusion-xl-base-1.0', desc: 'SDXL Base 1.0' },
+          { val: '@cf/bytedance/stable-diffusion-xl-lightning', desc: 'SDXL Lightning (אולטרה-מהיר)' },
+          { val: 'custom', desc: '✏️ מודל מותאם אישית...' }
+        ];
+      } else if (provider === 'puter') {
+        keyInput.placeholder = "Puter Auth Token...";
+        if (btnPuter) btnPuter.style.display = 'flex';
+        if (hint) { hint.style.display = 'block'; hint.className = 'input-hint hint-info'; hint.innerHTML = "💡 לחץ 'התחבר עם Puter' לאימות אוטומטי."; }
+        if (typeof puter !== 'undefined' && puter.auth && puter.auth.isSignedIn()) {
+          puter.auth.getUser().then(u => {
+            if (u?.username && hint) { hint.className = 'input-hint hint-ok'; hint.innerHTML = `✅ מחובר: ${u.username}`; }
+            if (!keyInput.value && puter.authToken) keyInput.value = puter.authToken;
+          }).catch(()=>{});
+        }
+        models = [
+          { val: 'gpt-image-1-mini', desc: 'GPT Image 1 Mini (OpenAI — מהיר)' },
+          { val: 'gpt-image-1', desc: 'GPT Image 1 (OpenAI)' },
+          { val: 'gpt-image-2', desc: 'GPT Image 2 (OpenAI)' },
+          { val: 'black-forest-labs/flux-schnell', desc: 'FLUX.1 Schnell (Black Forest Labs)' },
+          { val: 'black-forest-labs/flux-1.1-pro', desc: 'FLUX 1.1 Pro' },
+          { val: 'custom', desc: '✏️ מודל מותאם אישית...' }
+        ];
+      } else if (provider === 'google') {
+        if (btnPuter) btnPuter.style.display = 'none';
+        keyInput.placeholder = 'Google AI Studio API key (AIzaSy...)';
+        if (hint) hint.style.display = 'none';
+        models = [
+          { val: 'imagen-3.0-generate-001', desc: 'Imagen 3.0 Standard' },
+          { val: 'imagen-3.0-fast-generate-001', desc: 'Imagen 3.0 Fast' },
+          { val: 'custom', desc: '✏️ מודל מותאם...' }
+        ];
+      } else if (provider === 'openai') {
+        if (btnPuter) btnPuter.style.display = 'none';
+        keyInput.placeholder = 'OpenAI API key (sk-...)';
+        if (hint) hint.style.display = 'none';
+        models = [
+          { val: 'dall-e-3', desc: 'DALL-E 3' },
+          { val: 'dall-e-2', desc: 'DALL-E 2' },
+          { val: 'custom', desc: '✏️ מודל מותאם...' }
+        ];
+      } else if (provider === 'openrouter') {
+        if (btnPuter) btnPuter.style.display = 'none';
+        keyInput.placeholder = 'OpenRouter API key (sk-or-...)';
+        if (hint) hint.style.display = 'none';
+        models = [
+          { val: 'google/gemini-2.5-flash-image', desc: 'Gemini 2.5 Flash Image' },
+          { val: 'black-forest-labs/flux-1-schnell', desc: 'FLUX.1 Schnell' },
+          { val: 'custom', desc: '✏️ מודל מותאם...' }
+        ];
+      } else if (provider === 'huggingface') {
+        if (btnPuter) btnPuter.style.display = 'none';
+        keyInput.placeholder = 'Hugging Face Token (hf_...)';
+        if (hint) hint.style.display = 'none';
+        models = [
+          { val: 'RoiChocron/FLUX.1-schnell-bucket', desc: 'FLUX.1 Schnell Bucket (RoiChocron)' },
+          { val: 'black-forest-labs/FLUX.1-schnell', desc: 'FLUX.1 Schnell' },
+          { val: 'custom', desc: '✏️ מודל מותאם...' }
+        ];
+      }
+
+      if (modelSelect) {
+        modelSelect.innerHTML = models.map(m => `<option value="${m.val}">${m.desc}</option>`).join('');
+        if (customInput) customInput.style.display = 'none';
+        if (models.length > 0) {
+          modelSelect.value = models[0].val;
+          if (customInput) customInput.value = models[0].val;
+        }
+      }
+    }
+
+    // ============================================================
+    // DELETE POST
+    // ============================================================
+    async function deletePostAdmin(postId) {
+      if (!confirm('האם למחוק קרוסלה זו לצמיתות?')) return;
+      try {
+        const r = await fetch(`/api/posts/${postId}`, { method: 'DELETE' });
+        const d = await r.json();
+        if (!r.ok) throw new Error(d.error || 'Error deleting post');
+        postsDb = postsDb.filter(p => p.id !== postId);
+        showToast('✅ קרוסלה נמחקה בהצלחה!');
+        renderStats();
+        renderPostsList(postsDb);
+      } catch (err) {
+        showToast('❌ ' + err.message);
+      }
+    }
+
+    // ============================================================
+    // TOAST
+    // ============================================================
+    let toastTimer;
+    function showToast(msg) {
+      const t = document.getElementById('toast-message');
+      t.textContent = msg;
+      t.classList.add('show');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => t.classList.remove('show'), 2800);
+    }
+
+    // ============================================================
+    // INIT
+    // ============================================================
+    async function init() {
+      try {
+        const meRes = await fetch('/api/auth/me');
+        if (!meRes.ok) { window.location.href = 'login.html'; return; }
+        const me = await meRes.json();
+        if (me.role !== 'admin') { window.location.href = 'feed.html'; return; }
+
+        try {
+          const r = await fetch('/api/users');
+          if (r.ok) { const d = await r.json(); if (Array.isArray(d)) usersDb = d; }
+        } catch(e) { console.warn('Could not load users:', e); }
+
+        try {
+          const r = await fetch('/api/posts');
+          if (r.ok) { const d = await r.json(); if (Array.isArray(d)) postsDb = d; }
+        } catch(e) { console.warn('Could not load posts:', e); }
+
+        try {
+          const r = await fetch('/api/admin/settings');
+          if (r.ok) {
+            const s = await r.json();
+            const sp = document.getElementById('admin-system-prompt');
+            if (sp) sp.value = s.systemPrompt || s.system_prompt || '';
+            const ip = document.getElementById('admin-image-provider');
+            if (ip) ip.value = s.imageActiveProvider || s.image_active_provider || 'puter';
+            const ik = document.getElementById('admin-image-api-key');
+            if (ik) ik.value = s.imageApiKey || s.image_api_key || '';
+            const im = document.getElementById('admin-image-model');
+            if (im) im.value = s.imageGenModel || s.image_gen_model || '';
+            const ipr = document.getElementById('admin-image-prompt');
+            if (ipr) ipr.value = s.imageSystemPrompt || s.image_system_prompt || '';
+            onImageProviderChange();
+          }
+        } catch(e) { console.warn('Could not load settings:', e); }
+
+      } catch(e) {
+        console.warn('Admin init error:', e);
+      }
+
+      // Always render
+      renderStats();
+      renderUsersList(usersDb);
+      renderPostsList(postsDb);
+      onImageProviderChange();
+    }
+
+    window.onload = init;
+
+  </script>
+</body>
+</html>

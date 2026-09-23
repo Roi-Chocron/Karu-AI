@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <script src="/auth_helper.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shared Carousel - KaruAI</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --color-primary: #ef4444;
+            --color-primary-hover: #dc2626;
+            --color-bg: #111827;
+            --color-card-bg: #1f2937;
+            --color-card-border: #374151;
+            --color-text-main: #ffffff;
+            --color-text-muted: #9ca3af;
+        }
+        
+        body {
+            font-family: 'Outfit', sans-serif;
+            background-color: var(--color-bg);
+            color: var(--color-text-main);
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        header {
+            width: 100%;
+            background: #1f2937;
+            border-bottom: 1px solid #374151;
+            padding: 16px 24px;
+            box-sizing: border-box;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .logo {
+            font-size: 20px;
+            font-weight: 900;
+            color: var(--color-text-main);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            text-decoration: none;
+        }
+        
+        .logo-icon {
+            width: 32px;
+            height: 32px;
+            background: var(--color-primary);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #ffffff;
+        }
+
+        .create-cta {
+            background: var(--color-primary);
+            color: #ffffff;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-weight: 700;
+            font-size: 14px;
+            text-decoration: none;
+            transition: transform 0.2s, background 0.2s;
+        }
+        .create-cta:hover {
+            transform: translateY(-2px);
+            background: var(--color-primary-hover);
+        }
+
+        main {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 40px 20px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .post-card {
+            background: #1f2937;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+            width: 100%;
+            max-width: 540px;
+            overflow: hidden;
+            border: 1px solid #374151;
+        }
+
+        .post-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px;
+        }
+
+        .author-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .author-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #ef4444;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            font-size: 16px;
+        }
+
+        .author-details h3 {
+            margin: 0;
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--color-text-main);
+        }
+
+        .author-details p {
+            margin: 2px 0 0 0;
+            font-size: 12px;
+            color: var(--color-text-muted);
+        }
+
+        /* Carousel Outer Non-Scrolling Wrapper */
+        .carousel-wrapper {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 1 / 1;
+            background: #08080C;
+            overflow: hidden;
+            direction: ltr !important;
+        }
+
+        /* Carousel CSS */
+        .carousel-section {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            overflow-x: auto;
+            overflow-y: hidden;
+            scroll-snap-type: x mandatory;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+            scroll-behavior: smooth;
+            -webkit-overflow-scrolling: touch;
+            flex-shrink: 0;
+            direction: ltr !important;
+        }
+        .carousel-section::-webkit-scrollbar {
+            display: none;
+        }
+
+        .carousel-track {
+            display: flex;
+            height: 100%;
+            width: 100%;
+        }
+
+        .carousel-slide {
+            min-width: 100%;
+            height: 100%;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            scroll-snap-align: start;
+            scroll-snap-stop: always;
+        }
+
+        .slide-iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 540px !important;
+            height: 540px !important;
+            border: none;
+            transform-origin: 0 0;
+            pointer-events: none; /* Crucial to allow touch swipe on top */
+        }
+        
+        .slide-index {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            background: rgba(0,0,0,0.6);
+            color: #fff;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 700;
+            z-index: 10;
+        }
+
+        .carousel-nav-btn {
+            display: none !important;
+        }
+        .carousel-nav-btn:hover { background: var(--color-primary); color: #000; }
+        .carousel-nav-btn:active { transform: translateY(-50%) scale(0.95); }
+        .carousel-nav-btn.prev { left: 12px; }
+        .carousel-nav-btn.next { right: 12px; }
+
+        .carousel-dots {
+            position: absolute;
+            bottom: 0.85rem;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 0.4rem;
+            z-index: 10;
+            pointer-events: none;
+        }
+        .dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.45);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            pointer-events: auto;
+        }
+        .dot.active {
+            background: var(--color-primary);
+            width: 14px;
+            border-radius: 3px;
+        }
+
+        .post-content {
+            padding: 12px 16px 20px 16px;
+        }
+
+        .post-title {
+            font-size: 16px;
+            font-weight: 800;
+            margin: 0 0 8px 0;
+            line-height: 1.3;
+        }
+
+        .post-desc {
+            font-size: 14px;
+            color: var(--color-text-muted);
+            margin: 0 0 12px 0;
+            line-height: 1.5;
+        }
+
+        .post-hashtags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        .hashtag-item {
+            font-size: 12px;
+            color: var(--color-primary);
+            font-weight: 600;
+            background: rgba(239, 68, 68, 0.15);
+            padding: 4px 8px;
+            border-radius: 6px;
+        }
+
+        .loading-state, .error-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--color-text-muted);
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <a href="index.html" class="logo">
+            <div class="logo-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+                </svg>
+            </div>
+            KaruAI
+        </a>
+        <a href="signup.html" class="create-cta">Create Your Own</a>
+    </header>
+
+    <main id="main-content">
+        <div class="loading-state">Loading Carousel...</div>
+    </main>
+
+    <script>
+
+    // Global fetch interceptor for JWT authentication
+    (function() {
+      const originalFetch = window.fetch;
+      window.fetch = function(url, options = {}) {
+        options = options || {};
+        options.credentials = 'same-origin';
+        const token = localStorage.getItem('authToken');
+        if (token) {
+          options.headers = options.headers || {};
+          if (options.headers instanceof Headers) {
+            if (!options.headers.has('authorization')) {
+              options.headers.append('authorization', 'Bearer ' + token);
+            }
+          } else {
+            options.headers['authorization'] = 'Bearer ' + token;
+          }
+        }
+        return originalFetch(url, options);
+      };
+    })();
+
+        // Utilities
+        function sanitizeBackgroundStyle(bgString) {
+            if (!bgString) return '#ffffff';
+            return bgString.replace(/^(background(-color)?\s*:\s*)/i, '').replace(/;+$/, '').trim();
+        }
+
+        function adjustIframeScale() {
+            document.querySelectorAll('.carousel-section').forEach(container => {
+                const containerWidth = container.clientWidth;
+                if (containerWidth === 0) return;
+                const scale = containerWidth / 540;
+                container.querySelectorAll('.slide-iframe').forEach(iframe => {
+                    iframe.style.transform = `scale(${scale})`;
+                });
+            });
+        }
+        
+        window.addEventListener('resize', adjustIframeScale);
+
+        // Carousel JS
+        function handleCarouselScroll(event) {
+            const carousel = event.currentTarget;
+            const slideWidth = carousel.clientWidth;
+            if (slideWidth <= 0) return;
+            const activeIndex = Math.round(carousel.scrollLeft / slideWidth);
+            const currentSlide = parseInt(carousel.getAttribute('data-current-slide') || '0');
+            if (activeIndex !== currentSlide) {
+                carousel.setAttribute('data-current-slide', activeIndex);
+                updateCarouselUI(carousel);
+            }
+        }
+
+        function jumpToSlide(dot, index) {
+            const wrapper = dot.closest('.carousel-wrapper') || dot.closest('.post-card') || dot.closest('.carousel-section');
+            const carousel = wrapper.querySelector('.carousel-section') || wrapper;
+            carousel.setAttribute('data-current-slide', index);
+            const slideWidth = carousel.clientWidth;
+            carousel.scrollTo({
+                left: index * slideWidth,
+                behavior: 'smooth'
+            });
+            updateCarouselUI(carousel);
+        }
+
+        function moveSlide(btn, direction) {
+            const wrapper = btn.closest('.carousel-wrapper') || btn.closest('.post-card') || btn.closest('.carousel-section');
+            const carousel = wrapper.querySelector('.carousel-section') || wrapper;
+            const currentSlide = parseInt(carousel.getAttribute('data-current-slide') || '0');
+            const totalSlides = parseInt(carousel.getAttribute('data-total-slides') || '1');
+            let newSlide = currentSlide + direction;
+            if (newSlide < 0) newSlide = 0;
+            if (newSlide >= totalSlides) newSlide = totalSlides - 1;
+            
+            carousel.setAttribute('data-current-slide', newSlide);
+            const slideWidth = carousel.clientWidth;
+            carousel.scrollTo({
+                left: newSlide * slideWidth,
+                behavior: 'smooth'
+            });
+            updateCarouselUI(carousel);
+        }
+
+        function updateCarouselUI(carousel) {
+            const currentSlide = parseInt(carousel.getAttribute('data-current-slide') || '0');
+            const totalSlides = parseInt(carousel.getAttribute('data-total-slides') || '1');
+            const wrapper = carousel.closest('.carousel-wrapper') || carousel.closest('.post-card') || carousel;
+            
+            // Update dots
+            const dots = wrapper.querySelectorAll('.dot');
+            dots.forEach((dot, idx) => {
+                if (idx === currentSlide) {
+                    dot.classList.add('active');
+                } else {
+                    dot.classList.remove('active');
+                }
+            });
+            
+            // Update buttons
+            const prevBtn = wrapper.querySelector('.carousel-nav-btn.prev');
+            const nextBtn = wrapper.querySelector('.carousel-nav-btn.next');
+            if (prevBtn) prevBtn.style.display = currentSlide === 0 ? 'none' : 'flex';
+            if (nextBtn) nextBtn.style.display = currentSlide === totalSlides - 1 ? 'none' : 'flex';
+        }
+        
+        // Keyboard navigation
+        document.addEventListener('keydown', (e) => {
+            const carousel = document.querySelector('.carousel-section');
+            if (!carousel) return;
+            const nextBtn = carousel.querySelector('.carousel-nav-btn.next');
+            const prevBtn = carousel.querySelector('.carousel-nav-btn.prev');
+            
+            if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+                if (nextBtn && nextBtn.style.display !== 'none') moveSlide(nextBtn, 1);
+            } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+                if (prevBtn && prevBtn.style.display !== 'none') moveSlide(prevBtn, -1);
+            }
+        });
+
+        async function loadPost() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const postId = urlParams.get('postId');
+            
+            if (!postId) {
+                document.getElementById('main-content').innerHTML = `
+                    <div class="error-state">
+                        <h2>Invalid Link</h2>
+                        <p>No post ID provided in the URL.</p>
+                        <a href="index.html" class="create-cta" style="display:inline-block; margin-top:20px;">Go to Home</a>
+                    </div>
+                `;
+                return;
+            }
+
+            try {
+                const res = await fetch('/api/posts/public/' + postId);
+                if (!res.ok) throw new Error('Post not found');
+                const post = await res.json();
+                
+                const initials = (post.username || 'K').slice(0, 2).toUpperCase();
+                const slides = post.slides || [];
+                
+                const html = `
+                    <div class="post-card">
+                        <div class="post-header">
+                            <div class="author-info">
+                                <div class="author-avatar">${initials}</div>
+                                <div class="author-details">
+                                    <h3>${post.username || 'Creator'}</h3>
+                                    <p>${post.date || ''}</p>
+                                </div>
+                            </div>
+                            <div style="display: flex; gap: 4px; align-items: center; color: var(--color-text-muted); font-size: 13px; font-weight: 700;">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="${post.is_liked ? '#D91352' : 'none'}" stroke="${post.is_liked ? '#D91352' : 'currentColor'}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+                                </svg>
+                                ${post.likes_count || 0}
+                            </div>
+                        </div>
+
+                        <div class="carousel-wrapper">
+                            <div class="carousel-section" data-current-slide="0" data-total-slides="${slides.length}" onscroll="handleCarouselScroll(event)">
+                                <div class="carousel-track">
+                                    ${slides.map((slide, idx) => `
+                                        <div class="carousel-slide">
+                                            <iframe class="slide-iframe" sandbox="allow-same-origin allow-scripts" style="background: ${sanitizeBackgroundStyle(slide.background_style)};" srcdoc="
+                                                <!DOCTYPE html>
+                                                <html>
+                                                <head>
+  <script src="/auth_helper.js"></script>
+                                                    <meta charset='utf-8'>
+                                                    <style>
+                                                        html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: transparent; }
+                                                    </style>
+                                                </head>
+                                                <body>
+                                                    ${slide.html_content.replace(/"/g, '&quot;').replace(/'/g, '&#39;')}
+                                                </body>
+                                                </html>
+                                            "></iframe>
+                                            <div class="slide-index">${idx + 1}/${slides.length}</div>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                            
+                            <div class="carousel-dots">
+                                ${slides.map((_, idx) => `
+                                    <span class="dot ${idx === 0 ? 'active' : ''}" onclick="jumpToSlide(this, ${idx})"></span>
+                                `).join('')}
+                            </div>
+                        </div>
+
+                        <div class="post-content">
+                            <h2 class="post-title">${post.title || ''}</h2>
+                            <p class="post-desc">${post.description || ''}</p>
+                            <div class="post-hashtags">
+                                ${(post.hashtags || '').split(' ').map(tag => tag.trim() ? `<span class="hashtag-item">${tag}</span>` : '').join('')}
+                            </div>
+                        </div>
+                    </div>
+                `;
+                document.getElementById('main-content').innerHTML = html;
+                
+                // Finalize layout
+                setTimeout(() => {
+                    adjustIframeScale();
+                    const carousel = document.querySelector('.carousel-section');
+                    if (carousel) updateCarouselUI(carousel);
+                }, 50);
+
+            } catch (err) {
+                console.error(err);
+                document.getElementById('main-content').innerHTML = `
+                    <div class="error-state">
+                        <h2>Carousel Not Found</h2>
+                        <p>This post may have been deleted or is no longer shared.</p>
+                        <a href="index.html" class="create-cta" style="display:inline-block; margin-top:20px;">Go to Home</a>
+                    </div>
+                `;
+            }
+        }
+
+        window.onload = loadPost;
+    </script>
+</body>
+</html>

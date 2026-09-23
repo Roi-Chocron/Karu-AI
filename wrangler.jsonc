@@ -1,0 +1,37 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "karu-cloudflare-backend",
+  "main": "src/index.js",
+  "compatibility_date": "2024-09-23",
+  "compatibility_flags": ["nodejs_compat"],
+  "assets": {
+    "directory": "./public",
+    "binding": "ASSETS"
+  },
+  "ai": {
+    "binding": "AI"
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "karu-backend-db",
+      "database_id": "76ad95bf-3097-4caf-a4f7-9d3c1568dd39"
+    }
+  ],
+  "kv_namespaces": [
+    {
+      "binding": "KARU_MEDIA",
+      "id": "c84d273cae1544b798f9bc607d8150e9"
+    }
+  ],
+  "vars": {
+    "JWT_SECRET": "karu_ai_secure_jwt_secret_2026_key",
+    "FB_APP_ID": "2130186284573679",
+    "INSTAGRAM_ACCOUNT_ID": "17841475705860104",
+    "FACEBOOK_PAGE_ID": "1325245597340956",
+    "POLAR_ENVIRONMENT": "sandbox",
+    "POLAR_PRODUCT_BASIC_ID": "74e826e5-5645-4c6c-a5fd-a4be89c4d2ba",
+    "POLAR_PRODUCT_PRO_ID": "ee7d6624-49e6-4b16-a48e-b7ba84122e28",
+    "POLAR_PRODUCT_AGENCY_ID": "2e25cee7-426f-4e14-9ec9-e63de3ddd7ee"
+  }
+}

@@ -1,0 +1,949 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <script src="/auth_helper.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cloudflare Free AI Image Studio</title>
+  <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;600;700;900&family=Outfit:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #f38020;
+      --primary-hover: #fa821c;
+      --primary-glow: rgba(243, 128, 32, 0.25);
+      --bg: #0b0f19;
+      --surface: #111827;
+      --surface-card: #161f30;
+      --surface-hover: #1e293b;
+      --border: #233044;
+      --text: #f9fafb;
+      --text-muted: #9ca3af;
+      --accent-blue: #38bdf8;
+      --accent-green: #10b981;
+      --accent-purple: #a855f7;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Rubik', 'Outfit', sans-serif;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      background: rgba(17, 24, 39, 0.95);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      padding: 16px 28px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-decoration: none;
+      color: var(--text);
+    }
+
+    .brand-icon {
+      background: linear-gradient(135deg, #f38020, #f97316);
+      width: 42px;
+      height: 42px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      box-shadow: 0 4px 14px var(--primary-glow);
+    }
+
+    .brand-title {
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+    }
+
+    .brand-subtitle {
+      font-size: 12px;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .badge-free {
+      background: rgba(16, 185, 129, 0.15);
+      color: #34d399;
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      padding: 2px 8px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .nav-btn {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 14px;
+      text-decoration: none;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .nav-btn:hover {
+      background: var(--surface-hover);
+      border-color: var(--text-muted);
+    }
+
+    .container {
+      max-width: 1440px;
+      margin: 0 auto;
+      padding: 24px;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    /* Stats Grid */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 16px;
+    }
+
+    .stat-card {
+      background: var(--surface-card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 20px;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+    }
+
+    .stat-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      right: 0;
+      left: 0;
+      height: 3px;
+    }
+
+    .card-daily::before { background: linear-gradient(90deg, #f38020, #fbbf24); }
+    .card-weekly::before { background: linear-gradient(90deg, #38bdf8, #818cf8); }
+    .card-monthly::before { background: linear-gradient(90deg, #a855f7, #ec4899); }
+    .card-total::before { background: linear-gradient(90deg, #10b981, #14b8a6); }
+
+    .stat-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .stat-label {
+      font-size: 13px;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    .stat-icon {
+      font-size: 20px;
+      opacity: 0.8;
+    }
+
+    .stat-number {
+      font-size: 28px;
+      font-weight: 800;
+      letter-spacing: -1px;
+      margin-bottom: 6px;
+      display: flex;
+      align-items: baseline;
+      gap: 6px;
+    }
+
+    .stat-subtext {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .progress-bar-wrap {
+      background: rgba(255, 255, 255, 0.06);
+      height: 8px;
+      border-radius: 10px;
+      margin: 12px 0 6px;
+      overflow: hidden;
+    }
+
+    .progress-bar {
+      height: 100%;
+      border-radius: 10px;
+      transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .bar-daily { background: linear-gradient(90deg, #f38020, #fbbf24); }
+    .bar-weekly { background: linear-gradient(90deg, #38bdf8, #818cf8); }
+    .bar-monthly { background: linear-gradient(90deg, #a855f7, #ec4899); }
+
+    /* Creator Panel */
+    .studio-panel {
+      background: var(--surface-card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 24px;
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+    }
+
+    .studio-title {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .prompt-form {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .prompt-input-row {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .prompt-textarea {
+      flex: 1;
+      min-width: 320px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 16px;
+      color: var(--text);
+      font-size: 15px;
+      resize: vertical;
+      min-height: 80px;
+      transition: border-color 0.2s;
+    }
+
+    .prompt-textarea:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px var(--primary-glow);
+    }
+
+    .options-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 16px;
+      padding-top: 8px;
+      border-top: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .model-selector {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .model-selector label {
+      font-size: 13px;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    .select-dropdown {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 10px 14px;
+      border-radius: 10px;
+      font-size: 14px;
+      outline: none;
+      cursor: pointer;
+      min-width: 220px;
+    }
+
+    .btn-generate {
+      background: linear-gradient(135deg, #f38020, #e05e00);
+      color: #fff;
+      border: none;
+      padding: 12px 28px;
+      border-radius: 12px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 4px 15px var(--primary-glow);
+      transition: all 0.2s;
+    }
+
+    .btn-generate:hover:not(:disabled) {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 20px var(--primary-glow);
+      background: linear-gradient(135deg, #fb8c2c, #e05e00);
+    }
+
+    .btn-generate:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .spinner {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      border-radius: 50%;
+      border-top-color: #fff;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* Gallery Section */
+    .gallery-section {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .gallery-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .gallery-title {
+      font-size: 18px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .gallery-count {
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    .gallery-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 20px;
+    }
+
+    .image-card {
+      background: var(--surface-card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+      transition: all 0.25s ease;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .image-card:hover {
+      transform: translateY(-4px);
+      border-color: rgba(243, 128, 32, 0.4);
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+    }
+
+    .image-preview-wrap {
+      width: 100%;
+      padding-top: 100%;
+      position: relative;
+      background: #000;
+      overflow: hidden;
+      cursor: pointer;
+    }
+
+    .image-preview-wrap img {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform 0.3s ease;
+    }
+
+    .image-card:hover .image-preview-wrap img {
+      transform: scale(1.03);
+    }
+
+    .card-meta {
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      flex: 1;
+    }
+
+    .card-prompt {
+      font-size: 13px;
+      color: var(--text);
+      line-height: 1.4;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      word-break: break-word;
+    }
+
+    .card-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 11px;
+      color: var(--text-muted);
+      border-top: 1px solid rgba(255, 255, 255, 0.05);
+      padding-top: 10px;
+      margin-top: auto;
+    }
+
+    .card-actions {
+      display: flex;
+      gap: 6px;
+    }
+
+    .action-btn {
+      background: var(--surface-hover);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 12px;
+      text-decoration: none;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .action-btn:hover {
+      border-color: var(--text-muted);
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    /* Modal Viewer */
+    .modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.85);
+      backdrop-filter: blur(8px);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .modal.open {
+      display: flex;
+    }
+
+    .modal-content {
+      max-width: 900px;
+      width: 100%;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      overflow: hidden;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      max-height: 90vh;
+    }
+
+    .modal-img-wrap {
+      background: #000;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      max-height: 65vh;
+      overflow: hidden;
+    }
+
+    .modal-img-wrap img {
+      max-width: 100%;
+      max-height: 65vh;
+      object-fit: contain;
+    }
+
+    .modal-body {
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      overflow-y: auto;
+    }
+
+    .modal-close {
+      position: absolute;
+      top: 16px;
+      left: 16px;
+      background: rgba(0, 0, 0, 0.6);
+      border: none;
+      color: #fff;
+      font-size: 20px;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 2;
+    }
+
+    .empty-gallery {
+      grid-column: 1 / -1;
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--text-muted);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Header -->
+  <header>
+    <a href="#" class="brand">
+      <div class="brand-icon">⚡</div>
+      <div>
+        <div class="brand-title">Cloudflare AI Image Studio</div>
+        <div class="brand-subtitle">
+          <span>Worker: free-image-generation-api</span>
+          <span class="badge-free">100,000 קריאות ביום בחינם</span>
+        </div>
+      </div>
+    </a>
+    <div class="nav-links">
+      <button class="nav-btn" onclick="renderAll()">🔄 רענן נתונים</button>
+    </div>
+  </header>
+
+  <div class="container">
+    
+    <!-- Quota & Usage Dashboard Stats -->
+    <div class="stats-grid">
+      
+      <!-- Daily Usage -->
+      <div class="stat-card card-daily">
+        <div class="stat-header">
+          <span class="stat-label">שימוש יומי (Daily Quota)</span>
+          <span class="stat-icon">📅</span>
+        </div>
+        <div class="stat-number">
+          <span id="stat-used-today">0</span>
+          <span style="font-size: 14px; font-weight: 400; color: var(--text-muted);">/ 100,000</span>
+        </div>
+        <div class="progress-bar-wrap">
+          <div id="bar-daily" class="progress-bar bar-daily" style="width: 0.01%;"></div>
+        </div>
+        <div class="stat-subtext">
+          <span>נותרו להיום: <strong id="stat-remaining-today" style="color:#fbbf24;">100,000</strong> תמונות (<span id="stat-percent-left-today">100%</span> נותרו)</span>
+        </div>
+      </div>
+
+      <!-- Weekly Usage Estimate -->
+      <div class="stat-card card-weekly">
+        <div class="stat-header">
+          <span class="stat-label">שימוש שבועי (7 ימים אחרונים)</span>
+          <span class="stat-icon">📊</span>
+        </div>
+        <div class="stat-number">
+          <span id="stat-used-week">0</span>
+          <span style="font-size: 14px; font-weight: 400; color: var(--text-muted);">תמונות</span>
+        </div>
+        <div class="progress-bar-wrap">
+          <div id="bar-weekly" class="progress-bar bar-weekly" style="width: 0.01%;"></div>
+        </div>
+        <div class="stat-subtext">
+          <span>ניצול מכסה שבועית: <strong id="stat-percent-used-week">0%</strong> (מתוך מכסה מוערכת של 700,000)</span>
+        </div>
+      </div>
+
+      <!-- Monthly Usage Estimate -->
+      <div class="stat-card card-monthly">
+        <div class="stat-header">
+          <span class="stat-label">שימוש חודשי (30 ימים)</span>
+          <span class="stat-icon">📈</span>
+        </div>
+        <div class="stat-number">
+          <span id="stat-used-month">0</span>
+          <span style="font-size: 14px; font-weight: 400; color: var(--text-muted);">תמונות</span>
+        </div>
+        <div class="progress-bar-wrap">
+          <div id="bar-monthly" class="progress-bar bar-monthly" style="width: 0.01%;"></div>
+        </div>
+        <div class="stat-subtext">
+          <span>הערכת תמונות שנותרו לחודש: <strong id="stat-remaining-month" style="color:#a855f7;">3,000,000</strong></span>
+        </div>
+      </div>
+
+      <!-- Total Generated Counter -->
+      <div class="stat-card card-total">
+        <div class="stat-header">
+          <span class="stat-label">סה"כ תמונות שנשמרו בגלריה</span>
+          <span class="stat-icon">🎨</span>
+        </div>
+        <div class="stat-number">
+          <span id="stat-total-generated" style="color:#34d399;">0</span>
+        </div>
+        <div class="progress-bar-wrap">
+          <div class="progress-bar" style="width: 100%; background: #10b981;"></div>
+        </div>
+        <div class="stat-subtext">
+          <span>חיבור Worker: <strong style="color:#10b981;">● מקושר ישירות ל-Cloudflare</strong></span>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Generator Panel -->
+    <div class="studio-panel">
+      <div class="studio-title">
+        <span>✨</span>
+        <span>יצירת תמונה חדשה מבוססת בינה מלאכותית</span>
+      </div>
+      
+      <form class="prompt-form" id="generator-form" onsubmit="handleGenerate(event)">
+        <div class="prompt-input-row">
+          <textarea 
+            id="prompt-input" 
+            class="prompt-textarea" 
+            placeholder="תאר את התמונה שברצונך ליצור... (לדוגמה: Futuristic city in desert with glowing neon lights, cinematic lighting, photorealistic 8k)"
+            required
+          ></textarea>
+        </div>
+
+        <div class="options-bar">
+          <div class="model-selector">
+            <label for="model-select">בחר מודל Cloudflare AI:</label>
+            <select id="model-select" class="select-dropdown">
+              <option value="@cf/black-forest-labs/flux-2-dev">🔥 FLUX.2 Dev (הכי חזק, איכות פוטוריאליסטית עילאית)</option>
+              <option value="@cf/black-forest-labs/flux-2-klein-4b">⚡ FLUX.2 Klein 4B (מהיר במיוחד וקומפקטי)</option>
+              <option value="@cf/black-forest-labs/flux-1-schnell">⚡ FLUX.1 Schnell (ביצועים גבוהים ומהירים)</option>
+              <option value="@cf/stabilityai/stable-diffusion-xl-base-1.0">Stable Diffusion XL Base 1.0 (איכות מעולה)</option>
+              <option value="@cf/bytedance/stable-diffusion-xl-lightning">SDXL Lightning (מהירות גבוהה)</option>
+              <option value="@cf/lykon/dreamshaper-8-lcm">Dreamshaper 8 LCM (ציור ואומנות)</option>
+            </select>
+          </div>
+
+          <button type="submit" id="btn-submit" class="btn-generate">
+            <span id="btn-spinner" class="spinner" style="display:none;"></span>
+            <span id="btn-text">🎨 צור תמונה עכשיו</span>
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Gallery Section -->
+    <div class="gallery-section">
+      <div class="gallery-header">
+        <div class="gallery-title">
+          <span>🖼️</span>
+          <span>גלריית תמונות שנוצרו</span>
+        </div>
+        <div class="gallery-count" id="gallery-count-label">0 תמונות בגלריה</div>
+      </div>
+
+      <div class="gallery-grid" id="gallery-grid">
+        <!-- Gallery cards dynamically rendered here -->
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Modal Viewer -->
+  <div id="image-modal" class="modal" onclick="closeModal(event)">
+    <div class="modal-content" onclick="event.stopPropagation()">
+      <button class="modal-close" onclick="closeModal()">✕</button>
+      <div class="modal-img-wrap">
+        <img id="modal-img" src="" alt="AI generated preview">
+      </div>
+      <div class="modal-body">
+        <h4 style="font-size: 14px; color: var(--text-muted);">פרומפט:</h4>
+        <p id="modal-prompt" style="font-size: 15px; font-weight: 500; line-height: 1.5;"></p>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-top: 10px;">
+          <span id="modal-date" style="font-size: 12px; color: var(--text-muted);"></span>
+          <a id="modal-download" href="#" download class="action-btn" style="padding: 8px 16px; font-size: 13px;">
+            📥 הורד תמונה מקורית
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const WORKER_URL = "https://free-image-generation-api.roi-chocron7.workers.dev";
+    const DAILY_LIMIT = 100000;
+    const STORAGE_KEY = "cf_image_generations_history";
+
+    function getHistory() {
+      try {
+        const data = localStorage.getItem(STORAGE_KEY);
+        if (data) return JSON.parse(data);
+      } catch (e) {}
+      
+      // Default initial item
+      return [
+        {
+          id: "cf_sample_1",
+          prompt: "A cute high tech futuristic robot with blue glowing lights, digital art, 8k",
+          model: "@cf/stabilityai/stable-diffusion-xl-base-1.0",
+          url: "https://free-image-generation-api.roi-chocron7.workers.dev", // or fallback
+          blobUrl: "/uploads/test_cf_robot.jpg",
+          date: new Date().toISOString()
+        }
+      ];
+    }
+
+    function saveHistory(history) {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(history));
+      } catch (e) {
+        console.warn("localStorage quota exceeded, removing oldest item", e);
+        if (history.length > 5) {
+          history.pop();
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(history));
+        }
+      }
+    }
+
+    function formatNum(num) {
+      return Number(num || 0).toLocaleString('en-US');
+    }
+
+    function calculateStats(history) {
+      const now = new Date();
+      const oneDay = 24 * 60 * 60 * 1000;
+      const oneWeek = 7 * oneDay;
+      const oneMonth = 30 * oneDay;
+
+      let usedToday = 0;
+      let usedWeek = 0;
+      let usedMonth = 0;
+
+      history.forEach(item => {
+        const itemDate = new Date(item.date);
+        const diff = now - itemDate;
+        if (diff <= oneDay) usedToday++;
+        if (diff <= oneWeek) usedWeek++;
+        if (diff <= oneMonth) usedMonth++;
+      });
+
+      const remainingToday = Math.max(0, DAILY_LIMIT - usedToday);
+      const dailyUsagePercent = ((usedToday / DAILY_LIMIT) * 100).toFixed(2);
+      const weeklyQuotaEst = DAILY_LIMIT * 7;
+      const weeklyUsagePercent = ((usedWeek / weeklyQuotaEst) * 100).toFixed(2);
+      const monthlyQuotaEst = DAILY_LIMIT * 30;
+      const remainingMonth = Math.max(0, monthlyQuotaEst - usedMonth);
+
+      return {
+        usedToday,
+        remainingToday,
+        dailyUsagePercent,
+        usedWeek,
+        weeklyUsagePercent,
+        usedMonth,
+        remainingMonth,
+        total: history.length
+      };
+    }
+
+    function renderAll() {
+      const history = getHistory();
+      const stats = calculateStats(history);
+
+      // Render stats
+      document.getElementById('stat-used-today').innerText = formatNum(stats.usedToday);
+      document.getElementById('stat-remaining-today').innerText = formatNum(stats.remainingToday);
+      const percentLeftToday = Math.max(0, 100 - parseFloat(stats.dailyUsagePercent)).toFixed(1);
+      document.getElementById('stat-percent-left-today').innerText = `${percentLeftToday}%`;
+      const dailyBarWidth = Math.max(0.5, parseFloat(stats.dailyUsagePercent) || 0.1);
+      document.getElementById('bar-daily').style.width = `${dailyBarWidth}%`;
+
+      document.getElementById('stat-used-week').innerText = formatNum(stats.usedWeek);
+      document.getElementById('stat-percent-used-week').innerText = `${stats.weeklyUsagePercent}%`;
+      const weeklyBarWidth = Math.max(0.5, parseFloat(stats.weeklyUsagePercent) || 0.1);
+      document.getElementById('bar-weekly').style.width = `${weeklyBarWidth}%`;
+
+      document.getElementById('stat-used-month').innerText = formatNum(stats.usedMonth);
+      document.getElementById('stat-remaining-month').innerText = formatNum(stats.remainingMonth);
+      const monthlyBarWidth = Math.max(0.5, ((stats.usedMonth / (DAILY_LIMIT * 30)) * 100) || 0.1);
+      document.getElementById('bar-monthly').style.width = `${monthlyBarWidth}%`;
+
+      document.getElementById('stat-total-generated').innerText = formatNum(stats.total);
+
+      // Render gallery
+      renderGallery(history);
+    }
+
+    function renderGallery(images) {
+      const grid = document.getElementById('gallery-grid');
+      const countLabel = document.getElementById('gallery-count-label');
+      
+      countLabel.innerText = `${images.length} תמונות בגלריה`;
+
+      if (!images || images.length === 0) {
+        grid.innerHTML = `
+          <div class="empty-gallery">
+            <div style="font-size: 48px; margin-bottom: 12px;">🎨</div>
+            <h3>עדיין לא נוצרו תמונות</h3>
+            <p>הזן פרומפט בתיבה למעלה ולחץ על "צור תמונה עכשיו" כדי להתחיל!</p>
+          </div>
+        `;
+        return;
+      }
+
+      grid.innerHTML = images.map(img => {
+        const dateStr = new Date(img.date).toLocaleString('he-IL', {
+          dateStyle: 'short',
+          timeStyle: 'short'
+        });
+        const safePrompt = escapeHtml(img.prompt);
+        const modelShort = (img.model || '').split('/').pop();
+        const imgSrc = img.blobUrl || img.dataUrl || '/uploads/test_cf_robot.jpg';
+
+        return `
+          <div class="image-card">
+            <div class="image-preview-wrap" onclick="openModal('${imgSrc}', '${escapeHtmlAttr(img.prompt)}', '${dateStr}')">
+              <img src="${imgSrc}" alt="${safePrompt}" loading="lazy">
+            </div>
+            <div class="card-meta">
+              <div class="card-prompt" title="${safePrompt}">${safePrompt}</div>
+              <div class="card-footer">
+                <span>${modelShort} • ${dateStr}</span>
+                <div class="card-actions">
+                  <a href="${imgSrc}" download="cf_${img.id}.jpg" class="action-btn" title="הורדה">📥 הורדה</a>
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    async function handleGenerate(e) {
+      e.preventDefault();
+      const promptInput = document.getElementById('prompt-input');
+      const modelSelect = document.getElementById('model-select');
+      const btnSubmit = document.getElementById('btn-submit');
+      const btnSpinner = document.getElementById('btn-spinner');
+      const btnText = document.getElementById('btn-text');
+
+      const prompt = promptInput.value.trim();
+      const model = modelSelect.value;
+
+      if (!prompt) return;
+
+      btnSubmit.disabled = true;
+      btnSpinner.style.display = 'inline-block';
+      btnText.innerText = 'מייצר ב-Cloudflare Workers AI...';
+
+      try {
+        // Direct call to Cloudflare Worker
+        const res = await fetch(`${WORKER_URL}/generate`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ prompt, model })
+        });
+
+        if (!res.ok) {
+          const errText = await res.text();
+          throw new Error(`Cloudflare שגיאה: ${errText}`);
+        }
+
+        const blob = await res.blob();
+        const blobUrl = URL.createObjectURL(blob);
+
+        const newGen = {
+          id: `cf_${Date.now()}`,
+          prompt,
+          model,
+          blobUrl,
+          date: new Date().toISOString()
+        };
+
+        const history = getHistory();
+        history.unshift(newGen);
+        saveHistory(history);
+
+        promptInput.value = '';
+        renderAll();
+
+        openModal(blobUrl, prompt, 'עכשיו');
+      } catch (err) {
+        alert(`שגיאה ביצירת התמונה: ${err.message}`);
+      } finally {
+        btnSubmit.disabled = false;
+        btnSpinner.style.display = 'none';
+        btnText.innerText = '🎨 צור תמונה עכשיו';
+      }
+    }
+
+    function openModal(url, prompt, date) {
+      document.getElementById('modal-img').src = url;
+      document.getElementById('modal-prompt').innerText = prompt;
+      document.getElementById('modal-date').innerText = date;
+      document.getElementById('modal-download').href = url;
+      document.getElementById('image-modal').classList.add('open');
+    }
+
+    function closeModal() {
+      document.getElementById('image-modal').classList.remove('open');
+    }
+
+    function escapeHtml(str) {
+      return (str || '').replace(/[&<>"']/g, m => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+      }[m]));
+    }
+
+    function escapeHtmlAttr(str) {
+      return (str || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+    }
+
+    // Initial render
+    renderAll();
+  </script>
+</body>
+</html>

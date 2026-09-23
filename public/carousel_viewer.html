@@ -1,0 +1,1020 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <script src="/auth_helper.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Instagram Carousel Viewer</title>
+    <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        :root {
+            --slate-950: #020617;
+            --slate-900: #0f172a;
+            --slate-800: #1e293b;
+            --slate-700: #334155;
+            --slate-600: #475569;
+            --slate-400: #94a3b8;
+            --slate-300: #cbd5e1;
+            --slate-200: #e2e8f0;
+            --emerald-500: #10b981;
+            --emerald-400: #34d399;
+            --emerald-300: #6ee7b7;
+            --indigo-500: #6366f1;
+            --indigo-400: #818cf8;
+            --bg-color: #0f172a;
+            --text-color: #f8fafc;
+        }
+        body {
+            font-family: 'Heebo', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #1e293b;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #475569;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #64748b;
+        }
+        header {
+            background: var(--slate-950);
+            border-bottom: 1px solid var(--slate-800);
+            padding: 16px 24px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        .header-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+        .logo-section {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .logo-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, var(--emerald-500), #2dd4bf);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 10px 15px -3px rgba(16, 185, 129, 0.2);
+        }
+        .logo-icon svg {
+            width: 24px;
+            height: 24px;
+            color: var(--slate-950);
+        }
+        .title-group h1 {
+            font-size: 20px;
+            font-weight: 900;
+            color: #fff;
+            margin: 0;
+            letter-spacing: 0.5px;
+        }
+        .title-group p {
+            font-size: 12px;
+            color: var(--slate-400);
+            margin: 2px 0 0 0;
+        }
+        .actions-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .tabs-nav {
+            background: var(--slate-950);
+            padding: 4px;
+            border-radius: 12px;
+            border: 1px solid var(--slate-800);
+            display: flex;
+            gap: 4px;
+        }
+        .tab-btn {
+            padding: 6px 16px;
+            font-size: 12px;
+            font-weight: 700;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: transparent;
+            color: var(--slate-400);
+        }
+        .tab-btn.active {
+            background: var(--emerald-500);
+            color: var(--slate-950);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        .tab-btn:hover:not(.active) {
+            color: #fff;
+        }
+        .btn-action {
+            padding: 8px 16px;
+            background: var(--slate-800);
+            color: var(--slate-200);
+            font-size: 12px;
+            font-weight: 700;
+            border-radius: 12px;
+            border: 1px solid var(--slate-700);
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .btn-action:hover {
+            background: var(--slate-700);
+            border-color: #cbd5e1;
+        }
+        main {
+            flex: 1;
+            max-width: 1200px;
+            width: 100%;
+            margin: 0 auto;
+            padding: 24px;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+        }
+        .tab-content {
+            flex: 1;
+            background: var(--slate-900);
+            border: 1px solid var(--slate-800);
+            border-radius: 24px;
+            padding: 20px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+            min-height: 700px;
+        }
+        .tab-content.hidden {
+            display: none;
+        }
+        .label-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        .input-label {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--slate-300);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .status-badge {
+            font-size: 12px;
+            padding: 4px 10px;
+            border-radius: 9999px;
+            background: var(--slate-800);
+            color: var(--slate-400);
+            border: 1px solid var(--slate-700);
+        }
+        .status-badge.success {
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--emerald-400);
+            border-color: rgba(16, 185, 129, 0.2);
+        }
+        .status-badge.error {
+            background: rgba(239, 68, 68, 0.1);
+            color: #f87171;
+            border-color: rgba(239, 68, 68, 0.2);
+        }
+        .editor-wrapper {
+            flex: 1;
+            position: relative;
+            margin-bottom: 16px;
+            min-height: 500px;
+        }
+        textarea.json-textarea {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            inset: 0;
+            background: var(--slate-950);
+            border: 1px solid var(--slate-800);
+            border-radius: 12px;
+            padding: 16px;
+            font-size: 12px;
+            font-family: monospace;
+            color: var(--emerald-300);
+            resize: none;
+            box-sizing: border-box;
+            outline: none;
+            text-align: left;
+            direction: ltr;
+        }
+        textarea.json-textarea:focus {
+            border-color: var(--emerald-500);
+        }
+        .btn-row {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+        }
+        .btn-clear {
+            padding: 12px 20px;
+            background: var(--slate-800);
+            color: var(--slate-300);
+            border: 1px solid var(--slate-700);
+            font-weight: 700;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-clear:hover {
+            background: var(--slate-700);
+        }
+        .btn-render {
+            padding: 12px 24px;
+            background: linear-gradient(to right, var(--emerald-500), #14b8a6);
+            color: var(--slate-950);
+            border: none;
+            font-weight: 900;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 4px 14px rgba(16, 185, 129, 0.3);
+        }
+        .btn-render:hover {
+            transform: scale(1.02);
+        }
+        .btn-render:active {
+            transform: scale(0.98);
+        }
+        
+        /* Preview container styling */
+        .preview-tab-content {
+            align-items: center;
+            justify-content: space-between;
+        }
+        .meta-container {
+            width: 100%;
+            background: rgba(2, 6, 23, 0.6);
+            border: 1px solid rgba(30, 41, 59, 0.8);
+            border-radius: 12px;
+            padding: 14px;
+            margin-bottom: 16px;
+            box-sizing: border-box;
+        }
+        .meta-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+            font-size: 12px;
+            color: var(--slate-300);
+        }
+        .meta-author {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .author-badge {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--emerald-400);
+            border: 1px solid rgba(16, 185, 129, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+        }
+        .token-badge {
+            padding: 4px 10px;
+            border-radius: 8px;
+            background: var(--slate-800);
+            color: var(--emerald-400);
+            border: 1px solid var(--slate-700);
+            font-family: monospace;
+        }
+        
+        .carousel-view-box {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            margin: auto 0;
+        }
+        .empty-state {
+            text-align: center;
+            padding: 64px 16px;
+        }
+        .empty-icon {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 16px;
+            border-radius: 24px;
+            background: var(--slate-800);
+            border: 1px solid var(--slate-700);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--slate-600);
+        }
+        .empty-state h3 {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--slate-300);
+            margin: 0 0 4px 0;
+        }
+        .empty-state p {
+            font-size: 14px;
+            color: var(--slate-600);
+            margin: 0;
+        }
+        
+        .carousel-outer {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .carousel-container-540 {
+            position: relative;
+            width: 540px;
+            height: 540px;
+            min-width: 540px;
+            min-height: 540px;
+            background: #000;
+            border-radius: 24px;
+            overflow: hidden;
+            border: 1px solid rgba(51, 65, 85, 0.6);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+        iframe.slide-iframe {
+            position: absolute;
+            inset: 0;
+            width: 540px;
+            height: 540px;
+            border: none;
+            pointer-events: none;
+        }
+        .carousel-control-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 540px;
+            max-width: 100%;
+            margin-top: 16px;
+            padding: 0 8px;
+            box-sizing: border-box;
+        }
+        .control-btn {
+            padding: 8px 16px;
+            background: var(--slate-800);
+            color: var(--slate-200);
+            font-size: 12px;
+            font-weight: 700;
+            border-radius: 12px;
+            border: 1px solid var(--slate-700);
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .control-btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+        .control-btn:not(:disabled):hover {
+            background: var(--slate-700);
+        }
+        .indicator-badges {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+        .indicator-pill {
+            font-size: 12px;
+            font-weight: 700;
+            background: var(--slate-800);
+            padding: 6px 12px;
+            border-radius: 12px;
+            border: 1px solid var(--slate-700);
+            color: var(--slate-300);
+        }
+        .tag-pill {
+            font-size: 12px;
+            font-weight: 700;
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--emerald-400);
+            padding: 6px 12px;
+            border-radius: 12px;
+            border: 1px solid rgba(16, 185, 129, 0.2);
+        }
+        .btn-copy {
+            padding: 6px 12px;
+            background: rgba(99, 102, 241, 0.1);
+            color: var(--indigo-400);
+            font-size: 12px;
+            font-weight: 700;
+            border-radius: 12px;
+            border: 1px solid rgba(99, 102, 241, 0.2);
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .btn-copy:hover {
+            background: rgba(99, 102, 241, 0.2);
+            color: var(--indigo-300);
+        }
+        .btn-copy.success {
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--emerald-400);
+            border-color: rgba(16, 185, 129, 0.2);
+        }
+        
+        .footer-desc-box {
+            width: 100%;
+            background: rgba(2, 6, 23, 0.6);
+            border: 1px solid rgba(30, 41, 59, 0.8);
+            border-radius: 12px;
+            padding: 14px;
+            margin-top: 16px;
+            box-sizing: border-box;
+            text-align: right;
+        }
+        .footer-desc-box p {
+            margin: 0;
+        }
+        .desc-text {
+            font-size: 12px;
+            color: var(--slate-300);
+            line-height: 1.5;
+            margin-bottom: 6px !important;
+        }
+        .hashtag-text {
+            font-size: 12px;
+            color: var(--emerald-400);
+            font-weight: 500;
+        }
+        
+        /* Modal Overlay styles */
+        .fixed-modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(2, 6, 23, 0.8);
+            backdrop-filter: blur(4px);
+            z-index: 50;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+        }
+        .fixed-modal.hidden {
+            display: none;
+        }
+        .modal-card {
+            background: var(--slate-900);
+            border: 1px solid var(--slate-800);
+            border-radius: 24px;
+            max-width: 450px;
+            width: 100%;
+            padding: 24px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+        }
+        .modal-card h3 {
+            font-size: 18px;
+            font-weight: 700;
+            color: #fff;
+            margin: 0 0 8px 0;
+        }
+        .modal-card p {
+            font-size: 14px;
+            color: var(--slate-300);
+            line-height: 1.6;
+            margin: 0 0 20px 0;
+        }
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="header-container">
+            <div class="logo-section">
+                <div class="logo-icon">
+                    <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                </div>
+                <div class="title-group">
+                    <h1>Instagram Carousels Viewer</h1>
+                    <p>Paste JSON code and view carousel in 540x540 resolution</p>
+                </div>
+            </div>
+            <div class="actions-group">
+                <div class="tabs-nav">
+                    <button id="tab-btn-json" class="tab-btn active">Edit JSON</button>
+                    <button id="tab-btn-preview" class="tab-btn">Carousel View</button>
+                </div>
+                <button id="load-sample-btn" class="btn-action">
+                    <svg style="width: 14px; height: 14px; color: var(--emerald-400)" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                    Load JSON Sample
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <!-- Tab 1: JSON Input Editor -->
+        <div id="tab-content-json" class="tab-content">
+            <div class="label-row">
+                <label for="json-input" class="input-label">
+                    <svg style="width: 16px; height: 16px; color: var(--emerald-400)" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path></svg>
+                    JSON code of the Post (aligned for saving)
+                </label>
+                <span id="json-status" class="status-badge">Waiting for Input</span>
+            </div>
+            <div class="editor-wrapper">
+                <textarea id="json-input" class="json-textarea" placeholder="Paste JSON code here..."></textarea>
+            </div>
+            <div class="btn-row">
+                <button id="clear-btn" class="btn-clear">Clear</button>
+                <button id="render-btn" class="btn-render">
+                    <svg style="width: 16px; height: 16px;" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path><path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    Display Carousel & Switch to Preview Tab
+                </button>
+            </div>
+        </div>
+
+        <!-- Tab 2: Carousel Preview -->
+        <div id="tab-content-preview" class="tab-content preview-tab-content hidden">
+            <div id="meta-container" class="meta-container" style="display: none;">
+                <div class="meta-row">
+                    <div class="meta-author">
+                        <div class="author-badge">
+                            <span id="author-initial">K</span>
+                        </div>
+                        <div>
+                            <span id="post-author" style="font-weight: 700; color: #fff;">Creator Name</span>
+                            <span style="color: var(--slate-600); margin: 0 4px;">•</span>
+                            <span id="post-date" style="color: var(--slate-400);">Date</span>
+                        </div>
+                    </div>
+                    <div>
+                        <span id="tokens-badge" class="token-badge">0 tokens</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="carousel-view-box">
+                <div id="empty-state" class="empty-state">
+                    <div class="empty-icon">
+                        <svg style="width: 40px; height: 40px;" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+                    </div>
+                    <h3>No Active Carousel</h3>
+                    <p>Paste JSON code in "Edit JSON" tab or click sample load button to start.</p>
+                </div>
+
+                <div id="carousel-wrapper" class="carousel-outer" style="display: none;">
+                    <div class="carousel-container-540">
+                        <iframe id="slide-frame" class="slide-iframe" sandbox="allow-same-origin"></iframe>
+                    </div>
+
+                    <div class="carousel-control-row">
+                        <button id="prev-btn" class="control-btn" disabled>
+                            <svg style="width: 16px; height: 16px;" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"></path></svg>
+                            Previous
+                        </button>
+                        
+                        <div class="indicator-badges">
+                            <span id="slide-indicator" class="indicator-pill">Slide 1 from 3</span>
+                            <span id="slide-tag-badge" class="tag-pill">Hook</span>
+                            
+                            <button id="copy-slide-btn" class="btn-copy">
+                                <svg style="width: 14px; height: 14px;" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                                <span id="copy-slide-text">Copy Image</span>
+                            </button>
+                        </div>
+
+                        <button id="next-btn" class="control-btn" disabled>
+                            Next
+                            <svg style="width: 16px; height: 16px;" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"></path></svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="post-details-footer" class="footer-desc-box" style="display: none;">
+                <p id="post-description" class="desc-text"></p>
+                <p id="post-hashtags" class="hashtag-text"></p>
+            </div>
+        </div>
+    </main>
+
+    <div id="custom-modal" class="fixed-modal hidden">
+        <div class="modal-card">
+            <h3 id="modal-title">Message</h3>
+            <p id="modal-message"></p>
+            <div class="modal-footer">
+                <button id="modal-close-btn" class="btn-render" style="padding: 10px 20px; font-size:12px;">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+
+    // Global fetch interceptor for JWT authentication
+    (function() {
+      const originalFetch = window.fetch;
+      window.fetch = function(url, options = {}) {
+        options = options || {};
+        options.credentials = 'same-origin';
+        const token = localStorage.getItem('authToken');
+        if (token) {
+          options.headers = options.headers || {};
+          if (options.headers instanceof Headers) {
+            if (!options.headers.has('authorization')) {
+              options.headers.append('authorization', 'Bearer ' + token);
+            }
+          } else {
+            options.headers['authorization'] = 'Bearer ' + token;
+          }
+        }
+        return originalFetch(url, options);
+      };
+    })();
+
+
+    // Custom Modal Popup Utility
+    function showModalPopup(title, message) {
+      let modal = document.getElementById('custom-alert-modal');
+      if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'custom-alert-modal';
+        modal.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.55);display:flex;align-items:center;justify-content:center;z-index:99999;font-family:\'Outfit\',sans-serif;padding:20px;box-sizing:border-box;';
+        const content = document.createElement('div');
+        content.style.cssText = 'background:#ffffff;padding:24px;border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,0.15);width:340px;max-width:100%;text-align:center;animation:modalFadeIn 0.25s ease;';
+        const animStyle = document.createElement('style');
+        animStyle.textContent = '@keyframes modalFadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }';
+        document.head.appendChild(animStyle);
+        const titleEl = document.createElement('h3');
+        titleEl.id = 'custom-alert-title';
+        titleEl.style.cssText = 'margin:0 0 10px 0;font-size:18px;color:#262F31;font-weight:800;';
+        const messageEl = document.createElement('p');
+        messageEl.id = 'custom-alert-message';
+        messageEl.style.cssText = 'margin:0 0 20px 0;font-size:14px;color:#7A8487;line-height:1.5;word-break:break-word;';
+        const btn = document.createElement('button');
+        btn.textContent = 'OK';
+        btn.style.cssText = 'background:#D91352;color:#ffffff;border:none;padding:10px 28px;border-radius:8px;font-weight:700;cursor:pointer;font-size:14px;transition:background 0.2s;';
+        btn.onclick = () => { modal.style.display = 'none'; };
+        btn.onmouseover = () => { btn.style.background = '#b81043'; };
+        btn.onmouseout = () => { btn.style.background = '#D91352'; };
+        content.appendChild(titleEl);
+        content.appendChild(messageEl);
+        content.appendChild(btn);
+        modal.appendChild(content);
+        document.body.appendChild(modal);
+      }
+      document.getElementById('custom-alert-title').textContent = title;
+      document.getElementById('custom-alert-message').textContent = message;
+      modal.style.display = 'flex';
+    }
+
+        let currentPostData = null;
+        let currentSlideIndex = 0;
+
+        const tabBtnJson = document.getElementById('tab-btn-json');
+        const tabBtnPreview = document.getElementById('tab-btn-preview');
+        const tabContentJson = document.getElementById('tab-content-json');
+        const tabContentPreview = document.getElementById('tab-content-preview');
+
+        function switchTab(tabName) {
+            if (tabName === 'json') {
+                tabBtnJson.classList.add('active');
+                tabBtnPreview.classList.remove('active');
+                tabContentJson.classList.remove('hidden');
+                tabContentPreview.classList.add('hidden');
+            } else {
+                tabBtnPreview.classList.add('active');
+                tabBtnJson.classList.remove('active');
+                tabContentPreview.classList.remove('hidden');
+                tabContentJson.classList.add('hidden');
+            }
+        }
+
+        tabBtnJson.addEventListener('click', () => switchTab('json'));
+        tabBtnPreview.addEventListener('click', () => switchTab('preview'));
+
+        const sampleJson = {
+          "id": "e4b9c1d0-61a7-4b7b-ba52-5a93df2c4511",
+          "author_name": "KaruUser",
+          "created_at": "2026-08-21T05:30:00.000Z",
+          "tokens_used": 1420,
+          "description": "How to build a strong personal brand on social media in 2026. 3 simple steps anyone can implement today.",
+          "hashtags": "#PersonalBrand #DigitalMarketing #KaruAI #Entrepreneurship",
+          "slides": [
+            {
+              "slide_index": 0,
+              "tag": "Hook",
+              "title": "The mistake preventing your personal brand",
+              "background_style": "linear-gradient(135deg, #0b0f19 0%, #020408 100%)",
+              "html_content": "<link href=\"https://fonts.googleapis.com/css2?family=Heebo:wght@400;700;900&display=swap\" rel=\"stylesheet\"><div style=\"width:100%; height:100%; box-sizing:border-box; padding:32px 28px; overflow:hidden; position:relative; display:flex; flex-direction:column; justify-content:center; background: linear-gradient(135deg, #0b0f19 0%, #020408 100%); direction:ltr; font-family:'Heebo', sans-serif;\"><div style=\"position: absolute; top: 20px; right: 20px; color: rgba(255,255,255,0.4); font-size: 14px; font-weight: 400; direction: ltr; z-index: 10; flex-shrink: 0;\">01 / 03</div><div style=\"position: absolute; left: -30px; bottom: -30px; font-size: 150px; font-weight: 900; color: rgba(255,255,255,0.03); z-index: 1; user-select: none;\">01</div><span style=\"color: #34E0A1; font-size: 14px; font-weight: 700; margin-bottom: 8px; flex-shrink: 0; text-transform: uppercase;\">Hook</span><h1 style=\"color: #FFFFFF; font-size: 30px; font-weight: 900; line-height: 1.15; margin: 0 0 12px 0; flex-shrink: 0;\">The mistake that makes you <span style=\"color: #34E0A1;\">not grow</span> on social media</h1><p style=\"color: rgba(255,255,255,0.7); font-size: 15px; line-height: 1.35; margin: 0; flex-shrink: 0;\">Most people focus on gear instead of strategy. Here's what you need to do instead.</p></div>"
+            },
+            {
+              "slide_index": 1,
+              "tag": "Solution",
+              "title": "Focus on value not noise",
+              "background_style": "linear-gradient(135deg, #0b0f19 0%, #020408 100%)",
+              "html_content": "<link href=\"https://fonts.googleapis.com/css2?family=Heebo:wght@400;700;900&display=swap\" rel=\"stylesheet\"><div style=\"width:100%; height:100%; box-sizing:border-box; padding:32px 28px; overflow:hidden; position:relative; display:flex; flex-direction:column; justify-content:center; background: linear-gradient(135deg, #0b0f19 0%, #020408 100%); direction:ltr; font-family:'Heebo', sans-serif;\"><div style=\"position: absolute; top: 20px; right: 20px; color: rgba(255,255,255,0.4); font-size: 14px; font-weight: 400; direction: ltr; z-index: 10; flex-shrink: 0;\">02 / 03</div><div style=\"position: absolute; left: -30px; bottom: -30px; font-size: 150px; font-weight: 900; color: rgba(255,255,255,0.03); z-index: 1; user-select: none;\">02</div><span style=\"color: #34E0A1; font-size: 14px; font-weight: 700; margin-bottom: 8px; flex-shrink: 0;\">Solution</span><h2 style=\"color: #FFFFFF; font-size: 26px; font-weight: 900; line-height: 1.15; margin: 0 0 12px 0; flex-shrink: 0;\">Solve one problem <span style=\"color: #34E0A1;\">real</span></h2><ul style=\"color: rgba(255,255,255,0.8); font-size: 15px; line-height: 1.35; margin: 0; padding: 0; list-style-type: none; flex-shrink: 0;\"><li style=\"margin-bottom: 8px; position: relative; padding-right: 15px;\"><span style=\"color: #34E0A1; position: absolute; right: 0;\">•</span>Speak to a specific and focused target audience.</li><li style=\"margin-bottom: 8px; position: relative; padding-right: 15px;\"><span style=\"color: #34E0A1; position: absolute; right: 0;\">•</span>Provide a practical solution that can be implemented immediately.</li></ul></div>"
+            },
+            {
+              "slide_index": 2,
+              "tag": "Call to Action",
+              "title": "Start implementing now",
+              "background_style": "linear-gradient(135deg, #0b0f19 0%, #020408 100%)",
+              "html_content": "<link href=\"https://fonts.googleapis.com/css2?family=Heebo:wght@400;700;900&display=swap\" rel=\"stylesheet\"><div style=\"width:100%; height:100%; box-sizing:border-box; padding:32px 28px; overflow:hidden; position:relative; display:flex; flex-direction:column; justify-content:center; align-items: center; background: linear-gradient(135deg, #0b0f19 0%, #020408 100%); direction:ltr; font-family:'Heebo', sans-serif;\"><div style=\"position: absolute; top: 20px; right: 20px; color: rgba(255,255,255,0.4); font-size: 14px; font-weight: 400; direction: ltr; z-index: 10; flex-shrink: 0;\">03 / 03</div><div style=\"position: absolute; left: -30px; bottom: -30px; font-size: 150px; font-weight: 900; color: rgba(255,255,255,0.03); z-index: 1; user-select: none;\">03</div><span style=\"color: #34E0A1; font-size: 14px; font-weight: 700; margin-bottom: 8px; flex-shrink: 0;\">Next Step</span><h2 style=\"color: #FFFFFF; font-size: 26px; font-weight: 900; line-height: 1.15; text-align: center; margin: 0 0 20px 0; flex-shrink: 0;\">Want to build a winning brand?</h2><a href=\"#\" style=\"display: inline-block; background: #34E0A1; color: #020408; padding: 12px 24px; border-radius: 8px; font-size: 16px; font-weight: 700; text-decoration: none; text-align: center; min-width: 180px; white-space: nowrap; flex-shrink: 0; box-shadow: 0 4px 14px rgba(52, 224, 161, 0.4);\">Read the full guide</a></div>"
+            }
+          ]
+        };
+
+        function showModal(title, message) {
+            document.getElementById('modal-title').innerText = title;
+            document.getElementById('modal-message').innerText = message;
+            document.getElementById('custom-modal').classList.remove('hidden');
+        }
+
+        document.getElementById('modal-close-btn').addEventListener('click', () => {
+            document.getElementById('custom-modal').classList.add('hidden');
+        });
+
+        document.getElementById('load-sample-btn').addEventListener('click', () => {
+            document.getElementById('json-input').value = JSON.stringify(sampleJson, null, 2);
+            document.getElementById('json-status').innerText = 'Loaded successfully';
+            document.getElementById('json-status').className = 'status-badge success';
+            parseAndRenderCarousel();
+            switchTab('preview');
+        });
+
+        document.getElementById('clear-btn').addEventListener('click', () => {
+            document.getElementById('json-input').value = '';
+            document.getElementById('json-status').innerText = 'Waiting for Input';
+            document.getElementById('json-status').className = 'status-badge';
+            currentPostData = null;
+            document.getElementById('empty-state').style.display = 'block';
+            document.getElementById('carousel-wrapper').style.display = 'none';
+            document.getElementById('meta-container').style.display = 'none';
+            document.getElementById('post-details-footer').style.display = 'none';
+        });
+
+        document.getElementById('render-btn').addEventListener('click', () => {
+            const success = parseAndRenderCarousel();
+            if (success) {
+                switchTab('preview');
+            }
+        });
+
+        function parseAndRenderCarousel() {
+            const rawText = document.getElementById('json-input').value.trim();
+            if (!rawText) {
+                showModal('Error', 'Please paste JSON code before clicking Display Carousel.');
+                return false;
+            }
+
+            try {
+                currentPostData = JSON.parse(rawText);
+                if (!currentPostData.slides || !Array.isArray(currentPostData.slides) || currentPostData.slides.length === 0) {
+                    throw new Error('JSON code does not contain a valid Slides array (slides).');
+                }
+
+                currentSlideIndex = 0;
+                displayCurrentSlide();
+                updateMetadataUI();
+
+                document.getElementById('empty-state').style.display = 'none';
+                document.getElementById('carousel-wrapper').style.display = 'block';
+                document.getElementById('meta-container').style.display = 'block';
+                document.getElementById('post-details-footer').style.display = 'block';
+
+                document.getElementById('json-status').innerText = `Valid (${currentPostData.slides.length} Slides)`;
+                document.getElementById('json-status').className = 'status-badge success';
+                return true;
+
+            } catch (err) {
+                showModal('JSON Decode Error', 'code -JSON that  Legal. Please Verify thatSyntax Valid Try again.\n\nDetails: ' + err.message);
+                document.getElementById('json-status').innerText = 'Decode Error';
+                document.getElementById('json-status').className = 'status-badge error';
+                return false;
+            }
+        }
+
+        function updateMetadataUI() {
+            if (!currentPostData) return;
+            document.getElementById('post-author').innerText = currentPostData.author_name || 'Anonymous';
+            document.getElementById('author-initial').innerText = (currentPostData.author_name || 'K').charAt(0).toUpperCase();
+            
+            let formattedDate = currentPostData.created_at ? new Date(currentPostData.created_at).toLocaleDateString('he-IL') : '';
+            document.getElementById('post-date').innerText = formattedDate;
+            
+            if (currentPostData.tokens_used) {
+                document.getElementById('tokens-badge').innerText = `${currentPostData.tokens_used} tokens`;
+                document.getElementById('tokens-badge').style.display = 'inline-block';
+            } else {
+                document.getElementById('tokens-badge').style.display = 'none';
+            }
+
+            document.getElementById('post-description').innerText = currentPostData.description || '';
+            document.getElementById('post-hashtags').innerText = currentPostData.hashtags || '';
+        }
+
+        function displayCurrentSlide() {
+            if (!currentPostData || !currentPostData.slides) return;
+            const slide = currentPostData.slides[currentSlideIndex];
+            if (!slide) return;
+
+            const iframe = document.getElementById('slide-frame');
+            const wrappedHtml = `
+                <!DOCTYPE html>
+                <html>
+                <head>
+  <script src="/auth_helper.js"></script>
+                    <meta charset="utf-8">
+                    <style>
+                        html, body {
+                            margin: 0;
+                            padding: 0;
+                            width: 100%;
+                            height: 100%;
+                            overflow: hidden;
+                            background-color: transparent;
+                        }
+                    </style>
+                </head>
+                <body>
+                    ${slide.html_content}
+                </body>
+                </html>
+            `;
+            iframe.srcdoc = wrappedHtml;
+
+            const total = currentPostData.slides.length;
+            document.getElementById('slide-indicator').innerText = `Slide ${currentSlideIndex + 1} from ${total}`;
+            document.getElementById('slide-tag-badge').innerText = slide.tag || `Slide ${currentSlideIndex + 1}`;
+
+            document.getElementById('prev-btn').disabled = (currentSlideIndex === 0);
+            document.getElementById('next-btn').disabled = (currentSlideIndex === total - 1);
+        }
+
+        document.getElementById('prev-btn').addEventListener('click', () => {
+            if (currentSlideIndex > 0) {
+                currentSlideIndex--;
+                displayCurrentSlide();
+            }
+        });
+
+        document.getElementById('next-btn').addEventListener('click', () => {
+            if (currentPostData && currentSlideIndex < currentPostData.slides.length - 1) {
+                currentSlideIndex++;
+                displayCurrentSlide();
+            }
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if (!currentPostData || tabContentPreview.classList.contains('hidden')) return;
+            if (e.key === 'ArrowRight') {
+                if (currentSlideIndex > 0) {
+                    currentSlideIndex--;
+                    displayCurrentSlide();
+                }
+            } else if (e.key === 'ArrowLeft') {
+                if (currentSlideIndex < currentPostData.slides.length - 1) {
+                    currentSlideIndex++;
+                    displayCurrentSlide();
+                }
+            }
+        });
+
+        document.getElementById('copy-slide-btn').addEventListener('click', async () => {
+            if (!currentPostData || !currentPostData.slides) return;
+            
+            const slide = currentPostData.slides[currentSlideIndex];
+            const btn = document.getElementById('copy-slide-btn');
+            const textSpan = document.getElementById('copy-slide-text');
+            const originalText = textSpan.innerText;
+
+            textSpan.innerText = 'Copying...';
+            btn.disabled = true;
+            btn.style.opacity = '0.5';
+            btn.style.cursor = 'wait';
+
+            try {
+                const tempDiv = document.createElement('div');
+                tempDiv.style.width = '540px';
+                tempDiv.style.height = '540px';
+                tempDiv.style.position = 'fixed';
+                tempDiv.style.top = '-9999px';
+                tempDiv.style.left = '-9999px';
+                tempDiv.style.overflow = 'hidden';
+                tempDiv.style.margin = '0';
+                tempDiv.style.padding = '0';
+                
+                tempDiv.innerHTML = slide.html_content;
+                document.body.appendChild(tempDiv);
+
+                await Promise.all([
+                    document.fonts ? document.fonts.ready : Promise.resolve(),
+                    new Promise(resolve => {
+                        const images = Array.from(tempDiv.querySelectorAll('img'));
+                        if (images.length === 0) return resolve();
+                        let loaded = 0;
+                        images.forEach(img => {
+                            if (img.complete) {
+                                loaded++;
+                                if (loaded === images.length) resolve();
+                            } else {
+                                img.onload = img.onerror = () => {
+                                    loaded++;
+                                    if (loaded === images.length) resolve();
+                                };
+                            }
+                        });
+                    })
+                ]);
+                await new Promise(r => setTimeout(r, 150));
+
+                const canvas = await html2canvas(tempDiv, {
+                    scale: 2, 
+                    useCORS: true,
+                    allowTaint: true,
+                    backgroundColor: null
+                });
+
+                document.body.removeChild(tempDiv);
+
+                canvas.toBlob(async (blob) => {
+                    try {
+                        if (navigator.clipboard && window.ClipboardItem) {
+                            const item = new ClipboardItem({ 'image/png': blob });
+                            await navigator.clipboard.write([item]);
+                            showSuccess('Copied to clipboard!');
+                        } else {
+                            throw new Error('Clipboard API is not fully supported in this context.');
+                        }
+                    } catch (err) {
+                        console.error('Clipboard write failed:', err);
+                        resetBtn();
+                        showModal('Copy Error', 'Cannot copy image to clipboard in this environment. Your browser may be blocking this action for security reasons.');
+                    }
+                }, 'image/png');
+
+            } catch (err) {
+                console.error(err);
+                showModal('Error', 'An error occurred while creating image from Slide.');
+                resetBtn();
+            }
+
+            function showSuccess(msg) {
+                textSpan.innerText = msg;
+                btn.classList.add('success');
+                setTimeout(() => {
+                    resetBtn();
+                }, 2500);
+            }
+
+            function resetBtn() {
+                textSpan.innerText = originalText;
+                btn.disabled = false;
+                btn.style.opacity = '1';
+                btn.style.cursor = 'pointer';
+                btn.classList.remove('success');
+            }
+        });
+    </script>
+</body>
+</html>
