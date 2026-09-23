@@ -1,6 +1,6 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "karu-cloudflare-backend",
+  "name": "karu-ai",
   "main": "src/index.js",
   "compatibility_date": "2024-09-23",
   "compatibility_flags": ["nodejs_compat"],
