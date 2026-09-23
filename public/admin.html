@@ -53,10 +53,8 @@
 
     html, body {
       height: 100%;
-      min-height: 100%;
       width: 100%;
-      overflow-y: auto;
-      overflow-x: hidden;
+      overflow: hidden;
       font-family: var(--font-family);
       background-color: #e5e7eb;
       background-image:
@@ -69,7 +67,7 @@
       color: var(--color-text);
       display: flex;
       justify-content: center;
-      align-items: stretch;
+      align-items: center;
       direction: rtl;
     }
 
@@ -80,8 +78,7 @@
       width: 100%;
       max-width: 440px;
       height: 100%;
-      height: 100dvh;
-      max-height: 100dvh;
+      max-height: 100%;
       background: var(--color-bg);
       position: relative;
       display: flex;
@@ -91,7 +88,6 @@
       box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.15);
       color: var(--color-text);
       padding-top: env(safe-area-inset-top, 0px);
-      margin: 0 auto;
     }
 
     /* ============================================================
@@ -267,38 +263,34 @@
     .content-area {
       flex: 1 1 0%;
       min-height: 0;
-      height: 100%;
-      overflow: hidden;
-      position: relative;
-      background: var(--color-bg);
-    }
-
-    .tab-pane {
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      height: 100%;
-      min-height: 0;
       overflow-y: auto;
       overflow-x: hidden;
-      display: none;
-      flex-direction: column;
-      padding: 16px;
-      padding-bottom: 90px;
-      gap: 12px;
+      position: relative;
+      background: var(--color-bg);
       -webkit-overflow-scrolling: touch;
       overscroll-behavior-y: contain;
       scrollbar-width: thin;
       scrollbar-color: #cbd5e1 transparent;
     }
-    .tab-pane::-webkit-scrollbar {
+    .content-area::-webkit-scrollbar {
       width: 6px;
     }
-    .tab-pane::-webkit-scrollbar-thumb {
+    .content-area::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    .content-area::-webkit-scrollbar-thumb {
       background: #cbd5e1;
       border-radius: 4px;
+    }
+
+    .tab-pane {
+      display: none;
+      flex-direction: column;
+      width: 100%;
+      padding: 16px;
+      padding-bottom: 90px;
+      gap: 12px;
+      box-sizing: border-box;
     }
 
     .tab-pane.active {
@@ -664,14 +656,27 @@
     }
 
     textarea.settings-input#admin-system-prompt {
-      min-height: 380px !important;
-      height: 420px !important;
+      min-height: 480px !important;
+      height: 520px !important;
+      width: 100% !important;
+      box-sizing: border-box !important;
       flex-shrink: 0 !important;
       font-size: 13px !important;
       direction: ltr !important;
       text-align: left !important;
-      font-family: 'Fira Code', Consolas, Monaco, monospace;
-      resize: vertical;
+      font-family: 'Fira Code', Consolas, Monaco, monospace !important;
+      line-height: 1.6 !important;
+      resize: vertical !important;
+    }
+
+    .masked-key {
+      -webkit-text-security: disc !important;
+      font-family: monospace !important;
+      letter-spacing: 2px;
+    }
+    .masked-key.revealed {
+      -webkit-text-security: none !important;
+      letter-spacing: normal;
     }
 
     textarea.settings-input#admin-image-prompt {
@@ -838,21 +843,21 @@
     ============================================================ */
     .detail-panel {
       position: absolute;
-      inset: 0;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      width: 100%;
+      height: 100%;
       background: var(--color-bg);
       z-index: 100;
-      display: flex;
+      display: none;
       flex-direction: column;
-      transform: translateX(-100%);
-      transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.3s;
-      pointer-events: none;
-      visibility: hidden;
+      overflow: hidden;
     }
 
     .detail-panel.open {
-      transform: translateX(0);
-      pointer-events: auto;
-      visibility: visible;
+      display: flex;
     }
 
     .detail-header {
@@ -1576,8 +1581,8 @@
     <input type="text" name="fake_username_autofill" tabindex="-1" autocomplete="username">
     <input type="password" name="fake_password_autofill" tabindex="-1" autocomplete="current-password">
   </div>
-       MOBILE FRAME
-  ============================================================ -->
+
+  <!-- MOBILE FRAME -->
   <div class="mobile-frame">
 
     <!-- TOP HEADER -->
@@ -1589,7 +1594,7 @@
             <polyline points="12 5 19 12 12 19"></polyline>
           </svg>
         </a>
-        <span class="header-title">Karu <span>Admin</span></span>
+        <span class="header-title" dir="ltr"><bdi>Karu <span>Admin</span></bdi></span>
       </div>
       <span class="header-badge">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -1796,18 +1801,23 @@
 
           <!-- System Prompt -->
           <div class="settings-row">
-            <div class="settings-label">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                <polyline points="14 2 14 8 20 8"></polyline>
-                <line x1="16" y1="13" x2="8" y2="13"></line>
-                <line x1="16" y1="17" x2="8" y2="17"></line>
-                <polyline points="10 9 9 9 8 9"></polyline>
-              </svg>
-              System Prompt לקרוסלות
+            <div class="settings-label" style="display:flex; justify-content:space-between; align-items:center;">
+              <span style="display:flex; align-items:center; gap:6px;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                  <polyline points="14 2 14 8 20 8"></polyline>
+                  <line x1="16" y1="13" x2="8" y2="13"></line>
+                  <line x1="16" y1="17" x2="8" y2="17"></line>
+                  <polyline points="10 9 9 9 8 9"></polyline>
+                </svg>
+                System Prompt לקרוסלות
+              </span>
+              <button type="button" onclick="togglePromptExpand()" class="badge badge-free" style="border:none; cursor:pointer; font-size:11px; padding:3px 8px; font-weight:700;" id="btn-toggle-prompt-expand">
+                הרחב גודל
+              </button>
             </div>
             <div class="settings-desc">ה-Prompt הגלובלי המורחב שמשמש לכל יצירת קרוסלה במערכת.</div>
-            <textarea id="admin-system-prompt" class="settings-input" rows="18" style="min-height: 380px !important; height: 420px !important; flex-shrink: 0 !important; direction: ltr !important; text-align: left !important;" placeholder="הזן כאן את הפרומפט הגלובלי ליצירת קרוסלות..."></textarea>
+            <textarea id="admin-system-prompt" class="settings-input" rows="22" style="min-height: 480px !important; height: 520px !important; width: 100% !important; box-sizing: border-box !important; flex-shrink: 0 !important; direction: ltr !important; text-align: left !important;" placeholder="הזן כאן את הפרומפט הגלובלי ליצירת קרוסלות..."></textarea>
           </div>
         </div>
 
@@ -1841,7 +1851,15 @@
               </svg>
               מפתח API / טוקן
             </div>
-            <input type="password" id="admin-image-api-key" name="api_token_no_autofill" autocomplete="new-password" data-lpignore="true" class="settings-input" placeholder="הזן מפתח API..." onchange="onApiKeyBlur()">
+            <div style="position: relative; width: 100%;">
+              <input type="text" id="admin-image-api-key" class="settings-input masked-key" placeholder="הזן מפתח API..." onchange="onApiKeyBlur()" autocomplete="off" autocapitalize="off" spellcheck="false" data-lpignore="true" style="padding-left: 38px;">
+              <button type="button" id="btn-toggle-key-mask" onclick="toggleApiKeyMask()" style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: var(--color-text-muted); display: flex; align-items: center; justify-content: center; padding: 4px;" title="הצג / הסתר מפתח">
+                <svg id="eye-icon-svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                  <circle cx="12" cy="12" r="3"></circle>
+                </svg>
+              </button>
+            </div>
             <button type="button" id="btn-puter-login" onclick="openPuterAuthWindow()" class="puter-btn" style="display:none;">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                 <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
@@ -2296,9 +2314,38 @@
       if (pane) pane.classList.add('active');
       const btn = document.getElementById('tab-btn-' + tabName);
       if (btn) btn.classList.add('active');
+      const ca = document.querySelector('.content-area');
+      if (ca) ca.scrollTop = 0;
       if (tabName === 'logs') {
         populateGlobalLogsUserDropdown();
         loadGlobalLogs();
+      }
+    }
+
+    function togglePromptExpand() {
+      const sp = document.getElementById('admin-system-prompt');
+      const btn = document.getElementById('btn-toggle-prompt-expand');
+      if (!sp) return;
+      const isExpanded = sp.style.height === '800px';
+      if (isExpanded) {
+        sp.style.height = '520px';
+        if (btn) btn.textContent = 'הרחב גודל';
+      } else {
+        sp.style.height = '800px';
+        if (btn) btn.textContent = 'הקטן חלון';
+      }
+    }
+
+    function toggleApiKeyMask() {
+      const el = document.getElementById('admin-image-api-key');
+      const icon = document.getElementById('eye-icon-svg');
+      if (!el) return;
+      el.classList.toggle('revealed');
+      const isRevealed = el.classList.contains('revealed');
+      if (icon) {
+        icon.innerHTML = isRevealed
+          ? '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line>'
+          : '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle>';
       }
     }
 
@@ -2369,11 +2416,6 @@
                 <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
               </svg>
             </button>
-            <span class="chevron">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                <polyline points="15 18 9 12 15 6"></polyline>
-              </svg>
-            </span>
           </div>
         `;
         body.appendChild(item);
