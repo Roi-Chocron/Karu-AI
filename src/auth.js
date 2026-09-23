@@ -69,7 +69,6 @@ export async function requireAdmin(c, next) {
     const secret = c.env.JWT_SECRET || 'karu_ai_secure_jwt_secret_2026_key';
     const decoded = await verify(token, secret, 'HS256');
     const db = c.env.DB;
-    
     let dbUser = null;
     if (decoded.id) {
       dbUser = await db.prepare('SELECT id, email, role FROM users WHERE id = ?').bind(decoded.id).first();

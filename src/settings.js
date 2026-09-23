@@ -16,7 +16,7 @@ settingsApp.get('/api/admin/settings', requireAdmin, async (c) => {
     }
     const sysPrompt = settingsMap.system_prompt || settingsMap.systemPrompt || '';
     const imgPrompt = settingsMap.image_system_prompt || settingsMap.imageSystemPrompt || '';
-    const selModel = settingsMap.selected_model || settingsMap.selectedModel || '@cf/meta/llama-3.3-70b-instruct-fp8-fast';
+    const selModel = settingsMap.selected_model || settingsMap.selectedModel || '@cf/deepseek-ai/deepseek-r1-distill-qwen-32b';
     const actProv = settingsMap.active_provider || settingsMap.activeProvider || 'cloudflare';
     const imgProv = settingsMap.image_active_provider || settingsMap.imageActiveProvider || 'cloudflare';
     const imgModel = settingsMap.image_gen_model || settingsMap.imageGenModel || '@cf/black-forest-labs/flux-1-schnell';
@@ -73,6 +73,7 @@ settingsApp.get('/api/admin/models', requireAdmin, async (c) => {
     return c.json({
       activeProvider: 'cloudflare',
       models: [
+        { name: '@cf/deepseek-ai/deepseek-r1-distill-qwen-32b', displayName: 'DeepSeek R1 Distill Qwen 32B (Reasoning / SOTA)' },
         { name: '@cf/meta/llama-3.3-70b-instruct-fp8-fast', displayName: 'Meta Llama 3.3 70B Instruct (Cloudflare Edge)' }
       ]
     });

@@ -1548,7 +1548,7 @@
           <div class="status-dot"></div>
           <div class="model-status-text">
             <strong>Cloudflare Workers AI — פעיל</strong>
-            <span>@cf/meta/llama-3.3-70b-instruct-fp8-fast</span>
+            <span>@cf/deepseek-ai/deepseek-r1-distill-qwen-32b</span>
           </div>
         </div>
 
@@ -1556,7 +1556,7 @@
         <input type="hidden" id="admin-provider-select" value="cloudflare">
         <input type="hidden" id="admin-api-key" value="">
         <input type="hidden" id="admin-openrouter-key" value="">
-        <input type="hidden" id="admin-model-select" value="@cf/meta/llama-3.3-70b-instruct-fp8-fast">
+        <input type="hidden" id="admin-model-select" value="@cf/deepseek-ai/deepseek-r1-distill-qwen-32b">
 
         <!-- System Prompt -->
         <div class="settings-group">
@@ -2511,7 +2511,7 @@
             imageGenModel, image_gen_model: imageGenModel,
             imageSystemPrompt, image_system_prompt: imageSystemPrompt,
             puterAuthToken, puter_auth_token: puterAuthToken,
-            apiKey: '', selectedModel: '@cf/meta/llama-3.3-70b-instruct-fp8-fast',
+            apiKey: '', selectedModel: document.getElementById('admin-model-select')?.value || '@cf/deepseek-ai/deepseek-r1-distill-qwen-32b',
             activeProvider: 'cloudflare'
           })
         });

@@ -84,6 +84,8 @@ function extractCarouselJson(input) {
   if (typeof input !== 'string') return null;
 
   let str = input.trim();
+  // Strip DeepSeek R1 <think>...</think> block
+  str = str.replace(/<think>[\s\S]*?<\/think>/gi, '').trim();
   // Strip markdown fences
   str = str.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim();
 
@@ -183,10 +185,10 @@ async function generateWorkerImage(c, promptText) {
   return imageUrl;
 }
 
-// ─── Helper: run LLM (Cloudflare Workers AI — Llama 3.3 70B / Settings) ───────
+// ─── Helper: run LLM (Cloudflare Workers AI — DeepSeek R1 32B / Settings) ───
 async function runLLMChat(c, messages) {
   const db = c.env.DB;
-  let selectedModel = '@cf/meta/llama-3.3-70b-instruct-fp8-fast';
+  let selectedModel = '@cf/deepseek-ai/deepseek-r1-distill-qwen-32b';
 
   try {
     const selRow = await db.prepare(
@@ -206,21 +208,19 @@ async function runLLMChat(c, messages) {
     const aiRes = await c.env.AI.run(selectedModel, {
       messages,
       max_tokens: 4096,
-      temperature: 0.6,
-      repetition_penalty: 1.15
+      temperature: 0.6
     });
     return typeof aiRes === 'string' ? aiRes : (aiRes.response || '');
   } catch (err) {
     console.error(`LLM chat error with model ${selectedModel}:`, err);
-    // Fallback to Llama 3.1 8B if 70B temporarily fails
-    if (selectedModel !== '@cf/meta/llama-3.1-8b-instruct') {
+    // Fallback to Llama 3.3 70B if DeepSeek R1 temporarily times out or fails
+    if (selectedModel !== '@cf/meta/llama-3.3-70b-instruct-fp8-fast') {
       try {
-        console.log('Attempting fallback to @cf/meta/llama-3.1-8b-instruct...');
-        const fallbackRes = await c.env.AI.run('@cf/meta/llama-3.1-8b-instruct', {
+        console.log('Attempting fallback to @cf/meta/llama-3.3-70b-instruct-fp8-fast...');
+        const fallbackRes = await c.env.AI.run('@cf/meta/llama-3.3-70b-instruct-fp8-fast', {
           messages,
           max_tokens: 4096,
-          temperature: 0.6,
-          repetition_penalty: 1.15
+          temperature: 0.6
         });
         return typeof fallbackRes === 'string' ? fallbackRes : (fallbackRes.response || '');
       } catch (fbErr) {
@@ -461,7 +461,8 @@ aiApp.post('/api/chat', authenticateToken, async (c) => {
 
       replyText = `הקרוסלה נוצרה בהצלחה! (${parsed.slides.length} שקופיות)`;
     } else {
-      replyText = typeof rawResponse === 'string' && rawResponse.trim() ? rawResponse.trim() : 'התקבלה תשובה מהמודל';
+      const cleanRaw = typeof rawResponse === 'string' ? rawResponse.replace(/<think>[\s\S]*?<\/think>/gi, '').trim() : '';
+      replyText = cleanRaw || 'התקבלה תשובה מהמודל';
     }
 
     // Save chat history
