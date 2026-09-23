@@ -1570,10 +1570,12 @@
     }
 
   </style>
-</head>
 <body>
-
-  <!-- ============================================================
+  <!-- Decoy inputs to absorb browser password-manager credential autofill -->
+  <div style="opacity: 0; position: absolute; top: -9999px; left: -9999px; width: 0; height: 0; overflow: hidden; pointer-events: none;" aria-hidden="true">
+    <input type="text" name="fake_username_autofill" tabindex="-1" autocomplete="username">
+    <input type="password" name="fake_password_autofill" tabindex="-1" autocomplete="current-password">
+  </div>
        MOBILE FRAME
   ============================================================ -->
   <div class="mobile-frame">
@@ -1668,7 +1670,7 @@
       <div class="tab-pane active" id="pane-users">
         <!-- Search -->
         <div class="search-box">
-          <input type="text" id="user-search" placeholder="חיפוש לפי שם או אימייל..." oninput="filterUsers()" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+          <input type="search" id="user-search" name="search_users_query" placeholder="חיפוש לפי שם או אימייל..." oninput="onUserSearchInput(this)" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true">
           <span class="search-icon">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
               <circle cx="11" cy="11" r="8"></circle>
@@ -1704,7 +1706,7 @@
       <div class="tab-pane" id="pane-carousels">
         <!-- Search -->
         <div class="search-box">
-          <input type="text" id="post-search" placeholder="חיפוש לפי יוצר, נושא..." oninput="filterPosts()" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+          <input type="search" id="post-search" name="search_posts_query" placeholder="חיפוש לפי יוצר, נושא..." oninput="onPostSearchInput(this)" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true">
           <span class="search-icon">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
               <circle cx="11" cy="11" r="8"></circle>
@@ -1805,7 +1807,7 @@
               System Prompt לקרוסלות
             </div>
             <div class="settings-desc">ה-Prompt הגלובלי המורחב שמשמש לכל יצירת קרוסלה במערכת.</div>
-            <textarea id="admin-system-prompt" class="settings-input" placeholder="הזן כאן את הפרומפט הגלובלי ליצירת קרוסלות..."></textarea>
+            <textarea id="admin-system-prompt" class="settings-input" rows="18" style="min-height: 380px !important; height: 420px !important; flex-shrink: 0 !important; direction: ltr !important; text-align: left !important;" placeholder="הזן כאן את הפרומפט הגלובלי ליצירת קרוסלות..."></textarea>
           </div>
         </div>
 
@@ -1839,7 +1841,7 @@
               </svg>
               מפתח API / טוקן
             </div>
-            <input type="password" id="admin-image-api-key" class="settings-input" placeholder="הזן מפתח API..." onchange="onApiKeyBlur()">
+            <input type="password" id="admin-image-api-key" name="api_token_no_autofill" autocomplete="new-password" data-lpignore="true" class="settings-input" placeholder="הזן מפתח API..." onchange="onApiKeyBlur()">
             <button type="button" id="btn-puter-login" onclick="openPuterAuthWindow()" class="puter-btn" style="display:none;">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                 <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
@@ -1904,7 +1906,7 @@
       <div class="tab-pane" id="pane-logs">
         <!-- Search and quick filters -->
         <div class="search-box">
-          <input type="text" id="global-log-search" placeholder="חיפוש בלוגים (שם משתמש, הודעה, פעולה, כתובת IP)..." oninput="debounceFilterGlobalLogs()" autocomplete="off" spellcheck="false">
+          <input type="search" id="global-log-search" name="search_global_logs" placeholder="חיפוש בלוגים (שם משתמש, הודעה, פעולה, כתובת IP)..." oninput="debounceFilterGlobalLogs()" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true">
           <span class="search-icon">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
               <circle cx="11" cy="11" r="8"></circle>
@@ -2113,9 +2115,16 @@
                 <!-- Logs rendered by JS -->
               </div>
             </div>
-            <div style="font-size:11px; color:var(--color-text-sub); text-align:center; padding: 4px 0 8px;">
-              לוגים מלאים בזמן אמת ממסד הנתונים
+            <div style="font-size:11px; color:var(--color-text-sub); text-align:center; padding: 4px 0 6px;">
+              לוגים מלאים בזמן אמת ממסד הנתונים D1
             </div>
+            <button type="button" onclick="openUserLogsInMainTab(currentDetailUserId)" style="width:100%; font-size:12px; font-weight:700; padding:10px 14px; display:flex; align-items:center; justify-content:center; gap:8px; background:var(--color-surface); border:1px solid var(--color-border); border-radius:var(--radius-md); cursor:pointer; color:var(--color-text); transition:all 0.15s; font-family:var(--font-family);" onmouseover="this.style.background='#f3f4f6'" onmouseout="this.style.background='var(--color-surface)'">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="4 17 10 11 4 5"></polyline>
+                <line x1="12" y1="19" x2="20" y2="19"></line>
+              </svg>
+              <span>פתח ביומן פעילות מלא של המערכת</span>
+            </button>
           </div>
 
         </div><!-- /detail-body -->
@@ -2237,57 +2246,6 @@
       { id: 'p107', username: 'Shir Zohar',   title: 'Interior Design Tips for Small Living Rooms',     date: '02/08/2026', tokens: { prompt: 980,  save: 540,  autopost: 0    } }
     ];
 
-    // Fake logs data per user (for UI demo)
-    const fakeLogsDb = {
-      u1: [
-        { time: '22:04:11', level: 'INFO',  msg: 'User logged in from IP 212.34.x.x' },
-        { time: '22:04:15', level: 'INFO',  msg: 'GET /api/posts — 200 OK (34ms)' },
-        { time: '22:04:22', level: 'INFO',  msg: 'POST /api/generate-carousel — 200 OK (1.8s)' },
-        { time: '22:05:01', level: 'DEBUG', msg: 'LLM call: tokens_in=812, tokens_out=1450' },
-        { time: '22:05:03', level: 'INFO',  msg: 'Image generation started via Cloudflare FLUX.2' },
-        { time: '22:05:09', level: 'INFO',  msg: 'Image generation complete (5 slides)' },
-        { time: '22:05:10', level: 'INFO',  msg: 'POST /api/posts/save — 201 Created (21ms)' },
-        { time: '22:07:30', level: 'WARN',  msg: 'Rate limit approaching: 87/100 requests today' },
-        { time: '22:08:00', level: 'INFO',  msg: 'User session refreshed (JWT renewed)' },
-      ],
-      u2: [
-        { time: '21:55:04', level: 'INFO',  msg: 'User logged in from IP 82.80.x.x' },
-        { time: '21:55:12', level: 'INFO',  msg: 'GET /api/feed — 200 OK (12ms)' },
-        { time: '21:56:30', level: 'INFO',  msg: 'POST /api/generate-carousel — 200 OK (2.1s)' },
-        { time: '21:57:01', level: 'DEBUG', msg: 'LLM call: tokens_in=745, tokens_out=1200' },
-        { time: '21:57:05', level: 'WARN',  msg: 'Image provider API key expiring soon' },
-        { time: '21:58:44', level: 'INFO',  msg: 'POST /api/posts/save — 201 Created (18ms)' },
-      ],
-      u3: [
-        { time: '20:30:11', level: 'INFO',  msg: 'User registered new account' },
-        { time: '20:30:14', level: 'INFO',  msg: 'Welcome email sent to dana.cohen@outlook.com' },
-        { time: '20:31:05', level: 'INFO',  msg: 'GET /api/profile — 200 OK (8ms)' },
-        { time: '20:31:50', level: 'ERROR', msg: 'POST /api/generate-carousel — 403 Forbidden (posts_left=0)' },
-        { time: '20:31:52', level: 'WARN',  msg: 'User reached free plan post limit' },
-      ],
-      u4: [
-        { time: '19:00:22', level: 'INFO',  msg: 'User logged in (Agency plan)' },
-        { time: '19:01:10', level: 'INFO',  msg: 'Bulk carousel generation started (10 posts)' },
-        { time: '19:01:55', level: 'INFO',  msg: 'Auto-post to Instagram: @michaelg.growth — Success' },
-        { time: '19:02:12', level: 'INFO',  msg: 'Auto-post to LinkedIn — Success' },
-        { time: '19:03:00', level: 'DEBUG', msg: 'Scheduler: next autopost in 23h 57m' },
-        { time: '19:05:00', level: 'WARN',  msg: 'Puter.com token refresh required in 24h' },
-      ],
-      u5: [
-        { time: '18:15:30', level: 'INFO',  msg: 'User logged in from mobile device (iOS)' },
-        { time: '18:15:45', level: 'INFO',  msg: 'GET /api/feed — 200 OK (22ms)' },
-        { time: '18:16:20', level: 'INFO',  msg: 'POST /api/generate-carousel — 200 OK (1.6s)' },
-        { time: '18:16:25', level: 'INFO',  msg: 'Image saved successfully' },
-      ],
-      u6: [
-        { time: '17:44:00', level: 'INFO',  msg: 'User logged in (Pro plan)' },
-        { time: '17:44:30', level: 'INFO',  msg: 'POST /api/generate-carousel — 200 OK (1.9s)' },
-        { time: '17:44:55', level: 'INFO',  msg: 'Auto-post to Instagram: @guyavram.agency — Success' },
-        { time: '17:45:10', level: 'ERROR', msg: 'LinkedIn auto-post failed: token expired' },
-        { time: '17:45:12', level: 'WARN',  msg: 'Retrying LinkedIn auto-post (attempt 2/3)' },
-        { time: '17:45:18', level: 'INFO',  msg: 'LinkedIn auto-post succeeded on retry' },
-      ]
-    };
 
     // Fake chat threads per user
     const fakeChatsDb = {
@@ -2399,6 +2357,12 @@
               <span class="badge badge-${sub}">${subLabel(sub)}</span>
               ${user.role === 'admin' ? '<span class="badge badge-admin"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg> Admin</span>' : ''}
             </div>
+            <button type="button" class="user-log-btn" onclick="event.stopPropagation(); openUserLogsTab('${user.id}')" title="צפה בלוגים של משתמש זה">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="4 17 10 11 4 5"></polyline>
+                <line x1="12" y1="19" x2="20" y2="19"></line>
+              </svg>
+            </button>
             <button type="button" class="user-del-btn" onclick="event.stopPropagation(); deleteUserAdmin('${user.id}', '${safeName}')" title="מחק משתמש לצמיתות">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                 <polyline points="3 6 5 6 21 6"></polyline>
@@ -2421,8 +2385,21 @@
       return map[sub] || sub;
     }
 
+    let userHasTypedInSearch = false;
+    let postHasTypedInSearch = false;
+
+    function onUserSearchInput(el) {
+      userHasTypedInSearch = true;
+      filterUsers();
+    }
+
+    function onPostSearchInput(el) {
+      postHasTypedInSearch = true;
+      filterPosts();
+    }
+
     function filterUsers() {
-      const q = document.getElementById('user-search').value.toLowerCase();
+      const q = (document.getElementById('user-search')?.value || '').toLowerCase().trim();
       const filtered = usersDb.filter(u =>
         (u.username || '').toLowerCase().includes(q) ||
         (u.email || '').toLowerCase().includes(q)
@@ -2593,6 +2570,21 @@
       currentDetailUserId = null;
     }
 
+    function openUserLogsTab(userId) {
+      openUserDetail(userId);
+      switchDetailTab('logs');
+    }
+
+    function openUserLogsInMainTab(userId) {
+      closeUserDetail();
+      switchTab('logs');
+      const select = document.getElementById('filter-log-user');
+      if (select && userId) {
+        select.value = userId;
+      }
+      loadGlobalLogs();
+    }
+
     function switchDetailTab(tabName) {
       activeDetailTab = tabName;
       document.querySelectorAll('.detail-tab-btn').forEach(b => {
@@ -2742,19 +2734,7 @@
         body.scrollTop = body.scrollHeight;
       } catch (err) {
         console.error('Error fetching user logs:', err);
-        const fallback = fakeLogsDb[userId] || [];
-        const filtered = currentLogFilter === 'ALL' ? fallback : fallback.filter(l => l.level === currentLogFilter);
-        if (filtered.length === 0) {
-          body.innerHTML = `<div style="color:#ef4444;padding:24px;text-align:center;font-size:12px;">שגיאה בטעינת לוגים מהשרת</div>`;
-          return;
-        }
-        body.innerHTML = filtered.map(log => `
-          <div class="log-line">
-            <span class="log-time">${log.time}</span>
-            <span class="log-level ${log.level}">${log.level}</span>
-            <span class="log-msg">${log.msg}</span>
-          </div>
-        `).join('');
+        body.innerHTML = `<div style="color:#ef4444;padding:24px;text-align:center;font-size:12px;">שגיאה בטעינת לוגים מהשרת: ${escapeHtml(err.message || 'שגיאת רשת')}</div>`;
       }
     }
 
@@ -3395,17 +3375,48 @@
       toastTimer = setTimeout(() => t.classList.remove('show'), 2800);
     }
 
+    function purgeAutofillSearch() {
+      if (!userHasTypedInSearch) {
+        const u = document.getElementById('user-search');
+        if (u && document.activeElement !== u && u.value) {
+          u.value = '';
+          filterUsers();
+        }
+      }
+      if (!postHasTypedInSearch) {
+        const p = document.getElementById('post-search');
+        if (p && document.activeElement !== p && p.value) {
+          p.value = '';
+          filterPosts();
+        }
+      }
+      const l = document.getElementById('global-log-search');
+      if (l && document.activeElement !== l && l.value) {
+        l.value = '';
+      }
+    }
+
+    function setupSearchInputDefenses() {
+      const u = document.getElementById('user-search');
+      if (u) {
+        u.addEventListener('input', () => { userHasTypedInSearch = true; });
+        u.addEventListener('focus', () => { if (!u.value) userHasTypedInSearch = true; });
+      }
+      const p = document.getElementById('post-search');
+      if (p) {
+        p.addEventListener('input', () => { postHasTypedInSearch = true; });
+        p.addEventListener('focus', () => { if (!p.value) postHasTypedInSearch = true; });
+      }
+      purgeAutofillSearch();
+      [20, 60, 150, 300, 600, 1200, 2000].forEach(ms => setTimeout(purgeAutofillSearch, ms));
+    }
+
     // ============================================================
     // INIT
     // ============================================================
     async function init() {
-      // 1. Explicitly clear search inputs to avoid browser pre-fill
-      const userSearchInput = document.getElementById('user-search');
-      if (userSearchInput) userSearchInput.value = '';
-      const postSearchInput = document.getElementById('post-search');
-      if (postSearchInput) postSearchInput.value = '';
-      const logSearchInput = document.getElementById('global-log-search');
-      if (logSearchInput) logSearchInput.value = '';
+      // Setup autofill defenses and clear search fields
+      setupSearchInputDefenses();
 
       try {
         const meRes = await fetch('/api/auth/me');
@@ -3460,17 +3471,19 @@
       // Fetch live models for text and image
       await fetchTextModels();
       onImageProviderChange();
+
+      // Final delayed wipe for stubborn password managers
+      setTimeout(purgeAutofillSearch, 400);
+      setTimeout(purgeAutofillSearch, 1000);
     }
 
     window.onload = init;
 
     window.addEventListener('pageshow', () => {
-      const u = document.getElementById('user-search');
-      if (u) u.value = '';
-      const p = document.getElementById('post-search');
-      if (p) p.value = '';
-      const l = document.getElementById('global-log-search');
-      if (l) l.value = '';
+      userHasTypedInSearch = false;
+      postHasTypedInSearch = false;
+      purgeAutofillSearch();
+      [50, 200, 600].forEach(ms => setTimeout(purgeAutofillSearch, ms));
     });
 
   </script>
