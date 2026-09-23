@@ -30,3 +30,6 @@ node_modules/
 .vscode/
 *.swp
 *.swo
+
+# Personal Files
+"personal task list for the app.md"

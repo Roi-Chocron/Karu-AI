@@ -215,18 +215,50 @@ async function generateWorkerImage(c, promptText) {
   return imageUrl;
 }
 
-// ─── Helper: run LLM (Cloudflare Workers AI only — @cf/meta/llama-3.2-3b-instruct) ─
+// ─── Helper: run LLM (Cloudflare Workers AI — Llama 3.3 70B / Settings) ───────
 async function runLLMChat(c, messages) {
   const db = c.env.DB;
-  // Use only the Cloudflare Workers AI llama-3.2-3b-instruct model as requested
+  let selectedModel = '@cf/meta/llama-3.3-70b-instruct-fp8-fast';
+
   try {
-    const aiRes = await c.env.AI.run('@cf/meta/llama-3.2-3b-instruct', {
+    const selRow = await db.prepare(
+      "SELECT value FROM settings WHERE key = 'selected_model' OR key = 'selectedModel'"
+    ).first();
+    if (selRow && selRow.value && selRow.value.trim()) {
+      const val = selRow.value.trim();
+      if (val.startsWith('@cf/')) {
+        selectedModel = val;
+      }
+    }
+  } catch (err) {
+    console.warn('Could not read selected_model from settings:', err.message);
+  }
+
+  try {
+    const aiRes = await c.env.AI.run(selectedModel, {
       messages,
-      max_tokens: 4096
+      max_tokens: 4096,
+      temperature: 0.6,
+      repetition_penalty: 1.15
     });
     return typeof aiRes === 'string' ? aiRes : (aiRes.response || '');
   } catch (err) {
-    console.error('LLM chat error:', err);
+    console.error(`LLM chat error with model ${selectedModel}:`, err);
+    // Fallback to Llama 3.1 8B if 70B temporarily fails
+    if (selectedModel !== '@cf/meta/llama-3.1-8b-instruct') {
+      try {
+        console.log('Attempting fallback to @cf/meta/llama-3.1-8b-instruct...');
+        const fallbackRes = await c.env.AI.run('@cf/meta/llama-3.1-8b-instruct', {
+          messages,
+          max_tokens: 4096,
+          temperature: 0.6,
+          repetition_penalty: 1.15
+        });
+        return typeof fallbackRes === 'string' ? fallbackRes : (fallbackRes.response || '');
+      } catch (fbErr) {
+        console.error('Fallback LLM chat error:', fbErr);
+      }
+    }
     return '';
   }
 }
@@ -429,8 +461,19 @@ aiApp.post('/api/chat', authenticateToken, async (c) => {
     const sysPromptRow = await db.prepare("SELECT value FROM settings WHERE key = 'system_prompt'").first();
     const systemPrompt = sysPromptRow?.value || DEFAULT_SYSTEM_PROMPT;
 
+    // Inject existing carousel state if editing an existing post
+    let carouselContextPrompt = '';
+    if (existingPost && existingPost.carousel_data) {
+      try {
+        const cd = typeof existingPost.carousel_data === 'string' ? JSON.parse(existingPost.carousel_data) : existingPost.carousel_data;
+        if (cd && Array.isArray(cd.slides) && cd.slides.length > 0) {
+          carouselContextPrompt = `\n\n<current_carousel_state>\nThe user is editing or expanding an existing carousel. Here is the current carousel JSON that you must update and build upon:\n${JSON.stringify({ title: cd.title, description: cd.description, slides: cd.slides }, null, 2)}\n\nCRITICAL INSTRUCTIONS FOR UPDATING / ADDING SLIDES:\n- The user wants to modify or add slides to this carousel.\n- Preserve the context, topic, and good design of existing slides while adding the new requested slides and changes.\n- You MUST output the COMPLETE updated carousel JSON with ALL slides (both existing and new).\n- Do NOT write conversational explanations or talk about what you plan to add. Output ONLY the final valid JSON starting with { and ending with }.\n</current_carousel_state>`;
+        }
+      } catch (e) {}
+    }
+
     // Build messages array
-    const messages = [{ role: 'system', content: systemPrompt }];
+    const messages = [{ role: 'system', content: systemPrompt + carouselContextPrompt }];
     if (Array.isArray(history)) {
       for (const h of history) {
         if (h.role && h.content) {
