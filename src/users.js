@@ -308,6 +308,29 @@ usersApp.get('/api/users', requireAdmin, async (c) => {
   }
 });
 
+// 8.5 USER: UPDATE SUBSCRIPTION (FREE TIER)
+usersApp.post('/api/users/subscription', authenticateToken, async (c) => {
+  const user = c.get('user');
+  const db = c.env.DB;
+  const body = await c.req.json().catch(() => ({}));
+  const sub = body.subscription || 'free';
+
+  if (sub === 'free') {
+    try {
+      await db.prepare('UPDATE users SET subscription = ? WHERE id = ?').bind('free', user.id).run();
+      const updatedUser = await db.prepare(`
+        SELECT id, username, email, subscription, posts_left, instagram_connected, preferred_time, phone, bio, role, polar_customer_id, polar_subscription_id, polar_product_id 
+        FROM users WHERE id = ?
+      `).bind(user.id).first();
+      return c.json({ success: true, user: updatedUser });
+    } catch (err) {
+      return c.json({ error: 'Failed to update subscription to free' }, 500);
+    }
+  }
+
+  return c.json({ error: 'Paid plans must be purchased via Polar checkout' }, 400);
+});
+
 // 9. ADMIN: UPDATE SUBSCRIPTION
 usersApp.put('/api/users/:id/subscription', requireAdmin, async (c) => {
   const id = c.req.param('id');

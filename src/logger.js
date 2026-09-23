@@ -193,8 +193,8 @@ export async function queryUserLogs(db, {
   const bindings = [];
 
   if (userId && userId !== 'ALL') {
-    whereClauses.push('user_id = ?');
-    bindings.push(userId);
+    whereClauses.push('(user_id = ? OR username = ? OR username = (SELECT username FROM users WHERE id = ?) OR username = (SELECT email FROM users WHERE id = ?))');
+    bindings.push(userId, userId, userId, userId);
   }
 
   if (level && level !== 'ALL') {

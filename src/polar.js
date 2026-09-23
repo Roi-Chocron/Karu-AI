@@ -78,12 +78,6 @@ polarApp.post('/api/polar/create-checkout', authenticateToken, async (c) => {
   try {
     const payload = {
       products: [productId],
-      product_id: productId,
-      customer_email: user.email,
-      customer_metadata: {
-        user_id: user.id,
-        plan: normalizedPlan
-      },
       metadata: {
         user_id: user.id,
         plan: normalizedPlan
@@ -91,6 +85,10 @@ polarApp.post('/api/polar/create-checkout', authenticateToken, async (c) => {
       success_url: successUrl,
       return_url: returnUrl
     };
+
+    if (user.email && user.email.includes('@') && !user.email.endsWith('.local') && !user.email.endsWith('.test') && !user.email.endsWith('example.com')) {
+      payload.customer_email = user.email;
+    }
 
     let res = await fetch(`${config.apiBase}/checkouts/custom/`, {
       method: 'POST',
@@ -100,6 +98,22 @@ polarApp.post('/api/polar/create-checkout', authenticateToken, async (c) => {
       },
       body: JSON.stringify(payload)
     });
+
+    let data = await res.json();
+
+    // If 422 occurred with customer_email (e.g. invalid MX domain), retry without customer_email
+    if (!res.ok && res.status === 422 && payload.customer_email) {
+      delete payload.customer_email;
+      res = await fetch(`${config.apiBase}/checkouts/custom/`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${config.accessToken}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(payload)
+      });
+      data = await res.json();
+    }
 
     // Fallback to /checkouts/ if custom checkouts is not supported by endpoint
     if (res.status === 404 || res.status === 405) {
@@ -111,9 +125,9 @@ polarApp.post('/api/polar/create-checkout', authenticateToken, async (c) => {
         },
         body: JSON.stringify(payload)
       });
+      data = await res.json();
     }
 
-    const data = await res.json();
     const checkoutUrl = data.url || data.checkout_url;
     if (!res.ok || !checkoutUrl) {
       console.error('Polar create checkout failed:', data);

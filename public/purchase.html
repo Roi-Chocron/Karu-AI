@@ -1528,6 +1528,7 @@
 
       try {
         const res = await fetch('/api/polar/portal');
+        const data = await res.json();
         const portalUrl = data.url || data.portalUrl;
         if (res.ok && portalUrl) {
           window.open(portalUrl, '_blank');

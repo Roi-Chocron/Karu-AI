@@ -53,8 +53,10 @@
 
     html, body {
       height: 100%;
+      min-height: 100%;
       width: 100%;
-      overflow: hidden;
+      overflow-y: auto;
+      overflow-x: hidden;
       font-family: var(--font-family);
       background-color: #e5e7eb;
       background-image:
@@ -67,7 +69,7 @@
       color: var(--color-text);
       display: flex;
       justify-content: center;
-      align-items: center;
+      align-items: stretch;
       direction: rtl;
     }
 
@@ -78,6 +80,8 @@
       width: 100%;
       max-width: 440px;
       height: 100%;
+      height: 100dvh;
+      max-height: 100dvh;
       background: var(--color-bg);
       position: relative;
       display: flex;
@@ -87,6 +91,7 @@
       box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.15);
       color: var(--color-text);
       padding-top: env(safe-area-inset-top, 0px);
+      margin: 0 auto;
     }
 
     /* ============================================================
@@ -260,7 +265,9 @@
        CONTENT AREA
     ============================================================ */
     .content-area {
-      flex: 1;
+      flex: 1 1 0%;
+      min-height: 0;
+      height: 100%;
       overflow: hidden;
       position: relative;
       background: var(--color-bg);
@@ -268,16 +275,31 @@
 
     .tab-pane {
       position: absolute;
-      inset: 0;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: 100%;
+      min-height: 0;
       overflow-y: auto;
+      overflow-x: hidden;
       display: none;
       flex-direction: column;
       padding: 16px;
+      padding-bottom: 90px;
       gap: 12px;
       -webkit-overflow-scrolling: touch;
-      scrollbar-width: none;
+      overscroll-behavior-y: contain;
+      scrollbar-width: thin;
+      scrollbar-color: #cbd5e1 transparent;
     }
-    .tab-pane::-webkit-scrollbar { display: none; }
+    .tab-pane::-webkit-scrollbar {
+      width: 6px;
+    }
+    .tab-pane::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 4px;
+    }
 
     .tab-pane.active {
       display: flex;
@@ -642,9 +664,14 @@
     }
 
     textarea.settings-input#admin-system-prompt {
-      min-height: 380px;
-      height: 420px;
-      font-size: 13px;
+      min-height: 380px !important;
+      height: 420px !important;
+      flex-shrink: 0 !important;
+      font-size: 13px !important;
+      direction: ltr !important;
+      text-align: left !important;
+      font-family: 'Fira Code', Consolas, Monaco, monospace;
+      resize: vertical;
     }
 
     textarea.settings-input#admin-image-prompt {
@@ -711,6 +738,25 @@
       background: #fee2e2;
       color: #ef4444;
       border-color: #fca5a5;
+    }
+
+    .user-log-btn {
+      width: 28px;
+      height: 28px;
+      border-radius: var(--radius-sm);
+      border: 1px solid transparent;
+      background: transparent;
+      color: var(--color-text-sub);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .user-log-btn:hover {
+      background: rgba(239, 68, 68, 0.08);
+      color: var(--color-primary);
+      border-color: rgba(239, 68, 68, 0.25);
     }
 
     select.settings-input {
@@ -798,11 +844,15 @@
       display: flex;
       flex-direction: column;
       transform: translateX(-100%);
-      transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.3s;
+      pointer-events: none;
+      visibility: hidden;
     }
 
     .detail-panel.open {
       transform: translateX(0);
+      pointer-events: auto;
+      visibility: visible;
     }
 
     .detail-header {
@@ -895,12 +945,22 @@
     }
 
     .detail-body {
-      flex: 1;
+      flex: 1 1 0%;
+      min-height: 0;
       overflow-y: auto;
       -webkit-overflow-scrolling: touch;
-      scrollbar-width: none;
+      overscroll-behavior-y: contain;
+      scrollbar-width: thin;
+      scrollbar-color: #cbd5e1 transparent;
+      padding-bottom: 40px;
     }
-    .detail-body::-webkit-scrollbar { display: none; }
+    .detail-body::-webkit-scrollbar {
+      width: 6px;
+    }
+    .detail-body::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 4px;
+    }
 
     /* Detail sub-tabs */
     .detail-tabs {
