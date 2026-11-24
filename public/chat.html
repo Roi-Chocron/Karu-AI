@@ -1820,14 +1820,156 @@
         const obj = JSON.parse(candidate);
         const res = obj.carousel || obj;
         if (res.slides && res.slides.length > 0) return res;
+        if (res.type === 'image_plan') return res;
       } catch(e) {}
       try {
         let cleaned = clientCleanJsonString(candidate).replace(/,\s*([\]}])/g, '$1');
         const obj = JSON.parse(cleaned);
         const res = obj.carousel || obj;
         if (res.slides && res.slides.length > 0) return res;
+        if (res.type === 'image_plan') return res;
       } catch(e) {}
       return null;
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    function renderImagePlanApprovalCard(plan, chatBox) {
+      if (!plan || !Array.isArray(plan.images) || plan.images.length === 0) return;
+      if (!chatBox) chatBox = document.getElementById('chat-box');
+      if (!chatBox) return;
+
+      const existingCard = chatBox.querySelector('.image-plan-card');
+      if (existingCard) existingCard.remove();
+
+      const approvalCard = document.createElement('div');
+      approvalCard.className = 'image-plan-card';
+      approvalCard.style.cssText = 'align-self: flex-start; background: #ffffff; border: 1.5px solid #e0e7ff; border-radius: 16px; padding: 18px 20px; margin-bottom: 12px; box-shadow: 0 4px 15px rgba(99, 102, 241, 0.08); max-width: 90%; direction: rtl; text-align: right;';
+
+      const topicHtml = plan.topic ? `<div style="font-size: 13px; font-weight: 800; color: #4f46e5; margin-bottom: 8px;">📌 נושא הקרוסלה: ${escapeHtml(plan.topic)}</div>` : '';
+
+      let imagesListHtml = plan.images.map((img, idx) => {
+        const title = img.title_hebrew || img.title || `תמונה לשקופית ${idx + 1}`;
+        const desc = typeof img === 'string' ? img : (img.description || img.prompt || '');
+        return `<li style="margin-bottom: 10px; color: #374151; font-size: 13px; line-height: 1.4; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 10px 12px;">
+          <div style="font-weight: 700; color: #1e1b4b; font-size: 13.5px; margin-bottom: 4px;">🖼️ ${escapeHtml(title)}</div>
+          <div style="font-size: 11.5px; color: #64748b; font-family: monospace; direction: ltr; text-align: left; background: #ffffff; padding: 6px 8px; border-radius: 6px; border: 1px solid #edf2f7; word-break: break-word;">${escapeHtml(desc)}</div>
+        </li>`;
+      }).join('');
+
+      approvalCard.innerHTML = `
+        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+          <span style="font-size: 22px;">🎨</span>
+          <h4 style="margin: 0; font-size: 15px; font-weight: 800; color: #1e1b4b;">תוכנית תמונות להמחשת הקרוסלה</h4>
+        </div>
+        ${topicHtml}
+        <p style="margin: 0 0 12px 0; font-size: 13px; color: #6b7280; line-height: 1.45;">
+          ה-AI תכנן עבורך את התמונות הבאות. התמונות ישובצו כ<strong>כרטיסים ממוסגרים בתוך השקופית</strong> (ולא כרקע מטושטש) לשמירה על קריאות וניגודיות אבסולוטית:
+        </p>
+        <ul style="padding-right: 0; margin: 0 0 14px 0; list-style: none;">
+          ${imagesListHtml}
+        </ul>
+        <div id="plan-actions-${Date.now()}" style="display: flex; gap: 10px; flex-wrap: wrap;">
+          <button type="button" class="btn-approve-images" style="display: inline-flex; align-items: center; gap: 6px; background: linear-gradient(135deg, #ef4444, #dc2626); color: #ffffff; border: none; padding: 10px 18px; border-radius: 10px; font-weight: 700; font-size: 13.5px; cursor: pointer; transition: all 0.2s; box-shadow: 0 2px 6px rgba(239, 68, 68, 0.25);">
+            <span>✨ אשר והפק תמונות עכשיו</span>
+          </button>
+          <button type="button" class="btn-reject-images" style="display: inline-flex; align-items: center; gap: 6px; background: #f3f4f6; color: #4b5563; border: 1px solid #d1d5db; padding: 10px 16px; border-radius: 10px; font-weight: 600; font-size: 13px; cursor: pointer; transition: all 0.2s;">
+            <span>המשך בעיצוב טיפוגרפי בלבד</span>
+          </button>
+        </div>
+        <div class="plan-status-area" style="display: none; margin-top: 14px; font-size: 13px; font-weight: 600; color: #4f46e5; align-items: center; gap: 8px;">
+          <svg class="spinner" width="16" height="16" viewBox="0 0 50 50" style="animation: rotate 2s linear infinite; color: #4f46e5;"><circle cx="25" cy="25" r="20" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round" style="stroke-dasharray: 1, 150; stroke-dashoffset: 0; animation: dash 1.5s ease-in-out infinite;"></circle></svg>
+          <span class="plan-status-text">מייצר תמונות ומעדכן קרוסלה...</span>
+        </div>
+      `;
+
+      chatBox.appendChild(approvalCard);
+
+      const actionsDiv = approvalCard.querySelector('[id^="plan-actions-"]');
+      const approveBtn = approvalCard.querySelector('.btn-approve-images');
+      const rejectBtn = approvalCard.querySelector('.btn-reject-images');
+      const statusArea = approvalCard.querySelector('.plan-status-area');
+      const statusText = approvalCard.querySelector('.plan-status-text');
+
+      approveBtn.onclick = async () => {
+        if (actionsDiv) actionsDiv.style.display = 'none';
+        if (statusArea) statusArea.style.display = 'flex';
+        if (statusText) statusText.textContent = 'מייצר את התמונות במודל ה-AI (נא להמתין מספר שניות)...';
+
+        try {
+          const prompts = plan.images.map(img => typeof img === 'string' ? img : (img.description || img.prompt));
+          const token = localStorage.getItem('authToken') || localStorage.getItem('token') || '';
+          const imgRes = await fetch('/api/generate-images', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+            },
+            body: JSON.stringify({ prompts })
+          });
+
+          if (!imgRes.ok) {
+            const errData = await imgRes.json().catch(() => ({}));
+            throw new Error(errData.error || 'נכשלה יצירת התמונות');
+          }
+
+          const imgData = await imgRes.json();
+          const urls = (imgData.urls && imgData.urls.length > 0)
+            ? imgData.urls
+            : (Array.isArray(imgData.images) ? imgData.images.filter(x => x.success && x.url).map(x => x.url) : []);
+
+          if (urls.length === 0) {
+            throw new Error('לא התקבלו כתובות תמונה מהשרת');
+          }
+
+          if (statusText) statusText.textContent = 'התמונות הופקו! מעצב את שקופיות הקרוסלה בהיררכיה גבוהה...';
+
+          const topicHint = plan.topic ? ` on the topic "${plan.topic}"` : '';
+          const callbackMessage = `Images generated successfully. Image URLs: ${JSON.stringify(urls)}.
+Now generate the final carousel JSON${topicHint}.
+
+CRITICAL VISUAL DESIGN & CONTRAST RULES:
+1. DO NOT make the image a full-bleed 100% background covering the whole slide! (NO position:absolute; inset:0; opacity:0.35;)
+2. In each slide that includes an image, embed the image as an INTEGRATED, FRAMED VISUAL ELEMENT inside the slide layout:
+   <div style="width: 100%; height: 195px; border-radius: 16px; overflow: hidden; border: 1px solid rgba(255,255,255,0.15); box-shadow: 0 10px 25px rgba(0,0,0,0.3); margin-bottom: 16px; position: relative;">
+     <img src="IMAGE_URL" style="width: 100%; height: 100%; object-fit: cover; display: block;" />
+   </div>
+3. The headline, tags, and body text MUST be positioned on a solid, high-contrast background (#0b1120 or #ffffff) with crystal-clear readability and rich content. Text MUST NEVER overlap directly over an image!
+4. Output ONLY valid JSON starting with { and ending with }.`;
+
+          await sendChatMessage(callbackMessage, true);
+          if (statusArea) {
+            statusArea.innerHTML = `<span style="color: #10b981; font-weight: 700;">✓ התמונות הופקו והקרוסלה עודכנה בהצלחה!</span>`;
+          }
+        } catch (imageErr) {
+          console.error('Image generation error:', imageErr);
+          if (statusArea) {
+            statusArea.innerHTML = `<span style="color: #ef4444; font-weight: 700;">שגיאה ביצירת התמונות: ${imageErr.message || 'נסה שוב מאוחר יותר'}</span>`;
+          }
+          if (actionsDiv) actionsDiv.style.display = 'flex';
+        }
+      };
+
+      rejectBtn.onclick = async () => {
+        if (actionsDiv) actionsDiv.style.display = 'none';
+        if (statusArea) {
+          statusArea.style.display = 'flex';
+          statusText.textContent = 'יוצר קרוסלה טיפוגרפית נקייה...';
+        }
+        const topicHint = plan.topic ? ` בנושא "${plan.topic}"` : '';
+        await sendChatMessage(`צור את הקרוסלה${topicHint} ללא תמונות. השתמש בעיצוב טיפוגרפי וכרטיסים מודרניים עם ניגודיות גבוהה, כותרות מודגשות ועימוד נקי בלבד.`, false);
+      };
+
+      const scrollContainer = document.querySelector('.chat-scroll-container');
+      if (scrollContainer) scrollContainer.scrollTop = scrollContainer.scrollHeight;
     }
 
     async function openChatConversation(postId, knownPosts = null) {
@@ -1866,6 +2008,30 @@
 
           // Render chat history
           chatHistory.forEach(msg => {
+            if (msg.role === 'assistant') {
+              const plan = clientExtractCarouselJson(msg.content);
+              if (plan && plan.type === 'image_plan') {
+                if (data.carousel && Array.isArray(data.carousel.slides) && data.carousel.slides.length > 0) {
+                  const div = document.createElement('div');
+                  div.className = 'chat-message assistant';
+                  div.style.cssText = 'align-self: flex-start; background: #ffffff; color: #111827; padding: 12px 16px; border-radius: 14px; margin-bottom: 8px; border: 1px solid #e5e7eb; box-shadow: 0 2px 8px rgba(0,0,0,0.04); font-size: 13.5px; line-height: 1.5; max-width: 85%;';
+                  div.textContent = '🎨 תוכנית התמונות אושרה והקרוסלה הופקה.';
+                  if (chatBox) chatBox.appendChild(div);
+                } else {
+                  renderImagePlanApprovalCard(plan, chatBox);
+                }
+                return;
+              }
+              if (plan && Array.isArray(plan.slides) && plan.slides.length > 0) {
+                const div = document.createElement('div');
+                div.className = 'chat-message assistant';
+                div.style.cssText = 'align-self: flex-start; background: #ffffff; color: #111827; padding: 12px 16px; border-radius: 14px; margin-bottom: 8px; border: 1px solid #e5e7eb; box-shadow: 0 2px 8px rgba(0,0,0,0.04); font-size: 13.5px; line-height: 1.5; max-width: 85%;';
+                div.textContent = '✨ הקרוסלה נוצרה בהצלחה! ניתן לצפות בה בתצוגה המקדימה.';
+                if (chatBox) chatBox.appendChild(div);
+                return;
+              }
+            }
+
             const div = document.createElement('div');
             div.className = `chat-message ${msg.role === 'assistant' ? 'assistant' : 'user'}`;
             div.style.cssText = msg.role === 'assistant'
@@ -1873,7 +2039,7 @@
               : 'align-self: flex-end; background: #ef4444; color: #ffffff; padding: 12px 16px; border-radius: 12px; margin-bottom: 8px; font-size: 13.5px; line-height: 1.5; max-width: 85%;';
 
             const isJSON = msg.content.includes('{') && msg.content.includes('}');
-            div.textContent = isJSON ? 'Carousel generated successfully! Check preview above.' : msg.content;
+            div.textContent = isJSON ? '✨ תוכן הקרוסלה עודכן בהצלחה!' : msg.content;
             if (chatBox) chatBox.appendChild(div);
           });
 
@@ -2266,105 +2432,7 @@
         const plan = data.imagePlan || (data.carousel && data.carousel.type === 'image_plan' ? data.carousel : null) || (carouselObj && carouselObj.type === 'image_plan' ? carouselObj : null);
 
         if (plan && Array.isArray(plan.images) && plan.images.length > 0) {
-          // Display the interactive Image Plan Approval Card
-          const approvalCard = document.createElement('div');
-          approvalCard.className = 'image-plan-card';
-          approvalCard.style.cssText = 'align-self: flex-start; background: #ffffff; border: 1.5px solid #e0e7ff; border-radius: 16px; padding: 18px 20px; margin-bottom: 12px; box-shadow: 0 4px 15px rgba(99, 102, 241, 0.08); max-width: 90%; direction: rtl; text-align: right;';
-          
-          let imagesListHtml = plan.images.map((img, idx) => {
-            const desc = typeof img === 'string' ? img : (img.description || img.prompt || `תמונה ${idx + 1}`);
-            return `<li style="margin-bottom: 6px; color: #374151; font-size: 13.5px; line-height: 1.4;">
-              <span style="font-weight: 700; color: #4f46e5;">• תמונה ${idx + 1}:</span> ${desc}
-            </li>`;
-          }).join('');
-
-          approvalCard.innerHTML = `
-            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px;">
-              <span style="font-size: 20px;">🎨</span>
-              <h4 style="margin: 0; font-size: 15px; font-weight: 800; color: #1e1b4b;">תוכנית תמונות לקרוסלה</h4>
-            </div>
-            <p style="margin: 0 0 12px 0; font-size: 13px; color: #6b7280;">
-              ה-AI תכנן עבורך את התמונות הבאות להמחשת השקופיות. לחץ על הכפתור כדי לאשר את יצירתן והרכבת הקרוסלה:
-            </p>
-            <ul style="padding-right: 18px; margin: 0 0 16px 0;">
-              ${imagesListHtml}
-            </ul>
-            <div id="plan-actions-${Date.now()}" style="display: flex; gap: 10px; flex-wrap: wrap;">
-              <button class="btn-approve-images" style="display: inline-flex; align-items: center; gap: 6px; background: linear-gradient(135deg, #ef4444, #dc2626); color: #ffffff; border: none; padding: 9px 18px; border-radius: 10px; font-weight: 700; font-size: 13.5px; cursor: pointer; transition: all 0.2s; box-shadow: 0 2px 6px rgba(239, 68, 68, 0.25);">
-                <span>✨ אשר והפק תמונות עכשיו</span>
-              </button>
-              <button class="btn-reject-images" style="display: inline-flex; align-items: center; gap: 6px; background: #f3f4f6; color: #4b5563; border: 1px solid #d1d5db; padding: 9px 16px; border-radius: 10px; font-weight: 600; font-size: 13px; cursor: pointer; transition: all 0.2s;">
-                <span>המשך בעיצוב טקסטואלי בלבד</span>
-              </button>
-            </div>
-            <div class="plan-status-area" style="display: none; margin-top: 14px; font-size: 13px; font-weight: 600; color: #4f46e5; align-items: center; gap: 8px;">
-              <svg class="spinner" width="16" height="16" viewBox="0 0 50 50" style="animation: rotate 2s linear infinite; color: #4f46e5;"><circle cx="25" cy="25" r="20" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round" style="stroke-dasharray: 1, 150; stroke-dashoffset: 0; animation: dash 1.5s ease-in-out infinite;"></circle></svg>
-              <span class="plan-status-text">מייצר תמונות ומעדכן קרוסלה...</span>
-            </div>
-          `;
-
-          chatBox.appendChild(approvalCard);
-
-          const actionsDiv = approvalCard.querySelector('[id^="plan-actions-"]');
-          const approveBtn = approvalCard.querySelector('.btn-approve-images');
-          const rejectBtn = approvalCard.querySelector('.btn-reject-images');
-          const statusArea = approvalCard.querySelector('.plan-status-area');
-          const statusText = approvalCard.querySelector('.plan-status-text');
-
-          approveBtn.onclick = async () => {
-            if (actionsDiv) actionsDiv.style.display = 'none';
-            if (statusArea) statusArea.style.display = 'flex';
-            if (statusText) statusText.textContent = 'מייצר את התמונות במודל ה-AI (נא להמתין מספר שניות)...';
-
-            try {
-              const prompts = plan.images.map(img => typeof img === 'string' ? img : (img.description || img.prompt));
-              const token = localStorage.getItem('authToken') || localStorage.getItem('token') || '';
-              const imgRes = await fetch('/api/generate-images', {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                  ...(token ? { 'Authorization': `Bearer ${token}` } : {})
-                },
-                body: JSON.stringify({ prompts })
-              });
-
-              if (!imgRes.ok) {
-                const errData = await imgRes.json().catch(() => ({}));
-                throw new Error(errData.error || 'נכשלה יצירת התמונות');
-              }
-
-              const imgData = await imgRes.json();
-              const urls = imgData.urls || [];
-              if (urls.length === 0) {
-                throw new Error('לא התקבלו כתובות תמונה מהשרת');
-              }
-
-              if (statusText) statusText.textContent = 'התמונות נוצרו! כותב ומעצב את שקופיות הקרוסלה...';
-
-              // Call /api/chat with the generated image URLs to complete carousel generation
-              const callbackMessage = `Images generated successfully. URLs: ${JSON.stringify(urls)}. Please write the HTML and output the final carousel JSON now.`;
-              await sendChatMessage(callbackMessage, true);
-              if (statusArea) {
-                statusArea.innerHTML = `<span style="color: #10b981; font-weight: 700;">✓ התמונות הופקו והקרוסלה עודכנה בהצלחה!</span>`;
-              }
-            } catch (imageErr) {
-              console.error('Image generation error:', imageErr);
-              if (statusArea) {
-                statusArea.innerHTML = `<span style="color: #ef4444; font-weight: 700;">שגיאה ביצירת התמונות: ${imageErr.message || 'נסה שוב מאוחר יותר'}</span>`;
-              }
-              if (actionsDiv) actionsDiv.style.display = 'flex';
-            }
-          };
-
-          rejectBtn.onclick = async () => {
-            if (actionsDiv) actionsDiv.style.display = 'none';
-            if (statusArea) {
-              statusArea.style.display = 'flex';
-              statusText.textContent = 'יוצר קרוסלה טקסטואלית מעוצבת...';
-            }
-            await sendChatMessage('צור את הקרוסלה ללא תמונות, השתמש בעיצוב טיפוגרפי ו-CSS נקי בלבד.', false);
-          };
-
+          renderImagePlanApprovalCard(plan, chatBox);
         } else if (carouselObj && Array.isArray(carouselObj.slides) && carouselObj.slides.length > 0) {
           currentPostId = carouselObj.id || data.postId || (data.carousel ? data.carousel.id : null);
           if (currentPostId) localStorage.setItem('lastPostId', currentPostId);

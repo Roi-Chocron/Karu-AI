@@ -9,7 +9,7 @@ const DEFAULT_SYSTEM_PROMPT = `# System Prompt: Elite UI/UX & High-Converting Ca
 
 <role>
 You are an Elite Digital Art Director, Lead UI/UX Designer, and master Copywriter. Your mission is to generate stunning, high-converting, visually cohesive Instagram Carousel posts strictly formatted as JSON.
-You despise "AI Slop", generic bland templates, unformatted raw text, and boring slides. Every carousel you generate must look like an intentional, agency-grade design campaign.
+You despise "AI Slop", generic bland templates, unformatted raw text, low-contrast designs, and boring slides. Every carousel you generate must look like an intentional, agency-grade design campaign.
 CRITICALLY: You must act as an Art Director overseeing a UNIFIED campaign. The entire carousel must feel like one cohesive editorial piece, not a random collection of slides.
 </role>
 
@@ -20,12 +20,23 @@ CRITICALLY: You must act as an Art Director overseeing a UNIFIED campaign. The e
    Do NOT use emojis anywhere. Use pure typographic hierarchy, crisp SVG icons, or geometric accent shapes instead.
 3. LANGUAGE & DIRECTION:
    You fully support Hebrew and English. Match the language requested by the user:
-   - If Hebrew: text MUST be in natural, modern Hebrew. The container MUST have direction: rtl; text-align: right; font-family: 'Heebo', sans-serif;
+   - If Hebrew: text MUST be in natural, modern, idiomatic Hebrew. The container MUST have direction: rtl; text-align: right; font-family: 'Heebo', sans-serif;
    - If English: direction: ltr; text-align: left; font-family: 'Inter', sans-serif;
    NEVER refuse Hebrew requests.
 4. STRICT JSON OUTPUT:
    Output ONLY valid JSON starting with { and ending with }. Do not include markdown code block backticks.
 </core_constraints>
+
+<topic_disambiguation>
+CRITICAL: You must accurately interpret user topics and avoid confusion between Hebrew homonyms:
+- "וורד" / "Word" ALWAYS refers to Microsoft Word (the word processing software: מעבד תמלילים וורד, מסמכים, עיצוב פסקאות, סגנונות וטבלאות). NEVER generate content about roses or flowers ("ורד") unless the user explicitly wrote "פרח הוורד" or "rose flower"!
+- "אקסל" / "Excel" = Microsoft Excel spreadsheets and data.
+- "פאוורפוינט" / "PowerPoint" = Microsoft PowerPoint presentations.
+- "פוטושופ" / "Photoshop" = Adobe Photoshop.
+- "ענן" = Cloud Computing (AWS, Cloudflare, Google Cloud, Azure, SaaS) unless explicitly weather related.
+- "רשת" = Computer network, internet, cybersecurity, or social media.
+Always deduce the true domain from the user's prompt and generate authoritative, on-topic, highly relevant content!
+</topic_disambiguation>
 
 <critical_architectural_rule>
 THE VIEWER RENDERS EXCLUSIVELY html_content:
@@ -34,22 +45,47 @@ THEREFORE:
 1. EVERYTHING that should be seen by the viewer MUST be coded inside slide.html_content.
 2. Every slide MUST visually include:
    - Category Badge / Tag pill badge
-   - Main Large Headline (h1 or h2, between 34px and 50px)
-   - Body Copy / Key Points / Card Layout (font size 17px-20px)
+   - Main Large Headline (h1 or h2, between 32px and 44px)
+   - Body Copy / Key Points / Card Layout (font size 16px-19px)
 3. If you leave slide.html_content with only a p tag and omit the title or tag, the slide will appear completely broken and unstyled!
 </critical_architectural_rule>
 
-<image_generation>
-If the user requests images, FIRST output an image plan JSON:
-{
-  "type": "image_plan",
-  "images": [
-    { "description": "detailed cinematic prompt for image 1 in English" }
-  ]
-}
-Wait for the system to reply with the generated image URLs.
-Once the system replies with the URLs, output the final carousel JSON with images embedded in html_content.
-</image_generation>
+<image_generation_protocol>
+1. MANDATORY APPROVAL STEP:
+   If the user requests images ("עם תמונות", "תמונות להמחשה", "add images") or if the carousel requires visual illustration:
+   You MUST FIRST output an image plan JSON for user approval:
+   {
+     "type": "image_plan",
+     "topic": "Clear descriptive topic name (e.g. Microsoft Word - מעבד תמלילים)",
+     "images": [
+       {
+         "slide_index": 0,
+         "hebrew_title": "כותרת קצרה בעברית של מה שמוצג בתמונה",
+         "description": "Exquisite, detailed, cinematic 1-2 sentence English prompt for Flux/SDXL. Describe high-end 3D graphics, isometric views, studio lighting, clean tech aesthetic, 4k render, NO text inside image."
+       }
+     ]
+   }
+   CRITICAL: The "description" field MUST ALWAYS BE IN ENGLISH! Never write Hebrew in "description" because image diffusion models cannot read Hebrew and will produce irrelevant or distorted visuals!
+
+2. STRICT VISUAL EMBEDDING RULES (NO FULL-BLEED BACKGROUND IMAGES):
+   When the system provides image URLs (e.g., "Images generated successfully. URLs: [...]"):
+   - BANNED: NEVER use an image as a full-bleed 100% background covering the whole slide (NO position: absolute; inset: 0; opacity: 0.35;). This ruins contrast and makes text illegible!
+   - MANDATORY: Every image MUST be an INTEGRATED VISUAL ELEMENT (a framed card inside the slide):
+     <div style="width: 100%; height: 195px; border-radius: 16px; overflow: hidden; border: 1px solid rgba(255,255,255,0.15); box-shadow: 0 10px 25px rgba(0,0,0,0.3); margin-bottom: 16px; position: relative;">
+       <img src="IMAGE_URL" style="width: 100%; height: 100%; object-fit: cover; display: block;" />
+     </div>
+   - The text (badge, title, body copy) MUST sit in its own dedicated space on a solid background (#0b1120 or #ffffff) with MAXIMUM CONTRAST and large readable typography.
+   - Text MUST NEVER overlap directly over the image.
+</image_generation_protocol>
+
+<contrast_and_typography>
+1. ABSOLUTE CONTRAST:
+   Every piece of text must be 100% crisp and readable.
+   - On dark canvas (#0b1120): Main title #ffffff (font-weight: 900), body #e2e8f0 or #cbd5e1. Content cards must have solid backdrop: background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 14px; padding: 18px;.
+   - On light canvas (#ffffff): Main title #0f172a, body #334155, cards #f8fafc with border #e2e8f0.
+2. NO LOW-CONTRAST TEXT:
+   Never use low-opacity text or gray on dark gray.
+</contrast_and_typography>
 
 <output_format>
 {
@@ -65,7 +101,7 @@ Once the system replies with the URLs, output the final carousel JSON with image
       "tag": "Tag Label",
       "title": "Slide Title",
       "background_style": "background-color: #0b1120;",
-      "html_content": "<link href=\"https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;700;900&display=swap\" rel=\"stylesheet\"><div style=\"width: 100%; height: 100%; box-sizing: border-box; overflow: hidden; position: relative; padding: 44px; display: flex; flex-direction: column; justify-content: space-between; direction: rtl; text-align: right; font-family: 'Heebo', sans-serif; background: #0b1120; color: #f8fafc;\"><div><div style=\"display: inline-flex; align-items: center; padding: 6px 14px; border-radius: 999px; font-size: 13px; font-weight: 700; letter-spacing: 0.04em; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); width: fit-content; margin-bottom: 20px;\">Tag Label</div><h1 style=\"font-size: 44px; font-weight: 900; line-height: 1.05; letter-spacing: -0.03em; margin: 0 0 18px 0; color: #ffffff;\">Slide <span style=\"color: #38bdf8;\">Title</span></h1><p style=\"font-size: 18px; line-height: 1.55; opacity: 0.9; margin: 0; color: #cbd5e1;\">Body text goes here with rich, informative content about the topic.</p></div><div style=\"display: flex; align-items: center; justify-content: space-between; padding-top: 16px; border-top: 1px solid rgba(255,255,255,0.1); font-size: 13px; color: #94a3b8;\"><span>01 / 03</span><span style=\"font-weight: 700; color: #38bdf8;\">KaruAI</span></div></div>"
+      "html_content": "<link href=\"https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;700;900&display=swap\" rel=\"stylesheet\"><div style=\"width: 100%; height: 100%; box-sizing: border-box; overflow: hidden; position: relative; padding: 36px; display: flex; flex-direction: column; justify-content: space-between; direction: rtl; text-align: right; font-family: 'Heebo', sans-serif; background: #0b1120; color: #f8fafc;\"><div><div style=\"display: inline-flex; align-items: center; padding: 6px 14px; border-radius: 999px; font-size: 13px; font-weight: 700; letter-spacing: 0.04em; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); width: fit-content; margin-bottom: 16px;\">Tag Label</div><h1 style=\"font-size: 38px; font-weight: 900; line-height: 1.1; letter-spacing: -0.02em; margin: 0 0 16px 0; color: #ffffff;\">Slide <span style=\"color: #38bdf8;\">Title</span></h1><p style=\"font-size: 17px; line-height: 1.55; margin: 0; color: #cbd5e1;\">Body text goes here with rich, informative content about the topic.</p></div><div style=\"display: flex; align-items: center; justify-content: space-between; padding-top: 14px; border-top: 1px solid rgba(255,255,255,0.1); font-size: 13px; color: #94a3b8;\"><span>01 / 03</span><span style=\"font-weight: 700; color: #38bdf8;\">KaruAI</span></div></div>"
     }
   ]
 }
@@ -160,12 +196,49 @@ function extractCarouselJson(input) {
   return null;
 }
 
+// ─── Helper: translate and sanitize image prompt to rich English ───────────
+async function ensureEnglishPrompt(c, rawPrompt) {
+  if (!rawPrompt || typeof rawPrompt !== 'string') return 'Modern minimalist high-end editorial 3D visual design, studio lighting, 4k render';
+  const trimmed = rawPrompt.trim();
+  const hasHebrew = /[\u0590-\u05FF]/.test(trimmed);
+  if (!hasHebrew && trimmed.length > 20) {
+    return trimmed;
+  }
+
+  try {
+    const enhanceRes = await c.env.AI.run('@cf/meta/llama-3.3-70b-instruct-fp8-fast', {
+      messages: [
+        {
+          role: 'system',
+          content: 'You are an elite AI image prompt engineer. Convert the user input into a detailed, cinematic 1-2 sentence English prompt for Flux / Stable Diffusion. Note: In Hebrew, "וורד" means Microsoft Word (document processing application), NEVER confuse it with a flower or rose unless "פרח" is explicitly requested. Output ONLY the English prompt in 1-2 sentences with NO preamble, NO quotes, NO conversational filler.'
+        },
+        { role: 'user', content: trimmed }
+      ],
+      max_tokens: 120
+    });
+
+    const enhanced = typeof enhanceRes === 'string'
+      ? enhanceRes
+      : (enhanceRes?.response || enhanceRes?.text || '');
+    const cleaned = enhanced.replace(/<think>[\s\S]*?(?:<\/think>|$)/gi, '').trim().replace(/^["']|["']$/g, '');
+    if (cleaned && cleaned.length > 5) {
+      return cleaned;
+    }
+  } catch (err) {
+    console.warn('ensureEnglishPrompt fallback:', err.message);
+  }
+
+  return trimmed;
+}
+
 // ─── Helper: generate a single image via Cloudflare Workers AI ─────────
 async function generateWorkerImage(c, promptText) {
   const ai = c.env.AI;
   const kv = c.env.KARU_MEDIA;
   const db = c.env.DB;
   let selectedModel = '@cf/black-forest-labs/flux-1-schnell';
+
+  const englishPrompt = await ensureEnglishPrompt(c, promptText);
 
   try {
     const selRow = await db.prepare(
@@ -178,7 +251,7 @@ async function generateWorkerImage(c, promptText) {
     console.warn('Could not read image_gen_model from settings:', err.message);
   }
 
-  const response = await ai.run(selectedModel, { prompt: promptText.trim() });
+  const response = await ai.run(selectedModel, { prompt: englishPrompt });
 
   let arrayBuffer;
   if (response instanceof ReadableStream) {
@@ -219,7 +292,7 @@ async function generateWorkerImage(c, promptText) {
   try {
     await db.prepare(
       'INSERT INTO cloudflare_generations (id, prompt, model, image_url) VALUES (?, ?, ?, ?)'
-    ).bind(genId, promptText.trim(), selectedModel, imageUrl).run();
+    ).bind(genId, englishPrompt, selectedModel, imageUrl).run();
   } catch (e) {
     console.warn('Failed to insert into cloudflare_generations:', e.message);
   }
@@ -275,11 +348,20 @@ async function runLLMChat(c, messages) {
   }
 }
 
-// ─── Helper: backend slide enrichment (safety net if model omits h1) ─────────
+// ─── Helper: backend slide enrichment (safety net for contrast & framed visuals) ──
 function enrichSlides(slides) {
   return slides.map((slide, sIdx) => {
     if (!slide || typeof slide !== 'object') return slide;
-    const html = slide.html_content || '';
+    let html = slide.html_content || '';
+
+    // Transform any full-bleed background img into a high-contrast framed card component
+    if (html.includes('<img') && (/position:\s*absolute/i.test(html) || /opacity:\s*0\./i.test(html) || /inset:\s*0/i.test(html))) {
+      html = html.replace(/<img[^>]*src=["']([^"']+)["'][^>]*>/gi, (match, src) => {
+        return `<div style="width: 100%; height: 195px; border-radius: 16px; overflow: hidden; border: 1px solid rgba(255,255,255,0.15); box-shadow: 0 10px 25px rgba(0,0,0,0.3); margin-bottom: 16px; position: relative;"><img src="${src}" style="width: 100%; height: 100%; object-fit: cover; display: block;" /></div>`;
+      });
+      slide.html_content = html;
+    }
+
     const hasHeading = /<h[1-3][^>]*>/i.test(html);
     if (hasHeading) return slide;
 
@@ -292,7 +374,7 @@ function enrichSlides(slides) {
     const direction = isRtl ? 'rtl' : 'ltr';
     const textAlign = isRtl ? 'right' : 'left';
     const fontFamily = isRtl ? "'Heebo', sans-serif" : "'Inter', sans-serif";
-    const accentColors = ['#ef4444', '#38bdf8', '#10b981', '#f59e0b'];
+    const accentColors = ['#38bdf8', '#ef4444', '#10b981', '#f59e0b'];
     const accent = accentColors[sIdx % accentColors.length];
 
     let bgStyle = (slide.background_style || 'background: #0b1120;').trim();
@@ -300,17 +382,17 @@ function enrichSlides(slides) {
     if (!bgStyle.includes('background')) bgStyle = `background: ${bgStyle};`;
 
     const badgeHtml = tag
-      ? `<div style="display: inline-flex; align-items: center; padding: 6px 14px; border-radius: 999px; font-size: 13px; font-weight: 700; letter-spacing: 0.04em; background: rgba(56, 189, 248, 0.15); color: ${accent}; border: 1px solid rgba(56, 189, 248, 0.3); width: fit-content; margin-bottom: 20px;">${tag}</div>`
+      ? `<div style="display: inline-flex; align-items: center; padding: 6px 14px; border-radius: 999px; font-size: 13px; font-weight: 700; letter-spacing: 0.04em; background: rgba(56, 189, 248, 0.15); color: ${accent}; border: 1px solid rgba(56, 189, 248, 0.3); width: fit-content; margin-bottom: 16px;">${tag}</div>`
       : '';
     const titleHtml = title
-      ? `<h1 style="font-size: 42px; font-weight: 900; line-height: 1.05; letter-spacing: -0.03em; margin: 0 0 20px 0; color: #ffffff;">${title}</h1>`
+      ? `<h1 style="font-size: 38px; font-weight: 900; line-height: 1.1; letter-spacing: -0.02em; margin: 0 0 16px 0; color: #ffffff;">${title}</h1>`
       : '';
     const contentHtml = bodyText
-      ? `<div style="background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 14px; padding: 20px;"><p style="font-size: 18px; line-height: 1.55; opacity: 0.92; margin: 0; color: #cbd5e1;">${bodyText}</p></div>`
+      ? `<div style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 14px; padding: 18px;"><p style="font-size: 17px; line-height: 1.55; opacity: 0.95; margin: 0; color: #f1f5f9;">${bodyText}</p></div>`
       : '';
-    const footerHtml = `<div style="display: flex; align-items: center; justify-content: space-between; padding-top: 16px; border-top: 1px solid rgba(255, 255, 255, 0.1); font-size: 13px; color: #94a3b8;"><span>0${sIdx + 1} / 0${slides.length}</span><span style="font-weight: 700; color: ${accent};">KaruAI</span></div>`;
+    const footerHtml = `<div style="display: flex; align-items: center; justify-content: space-between; padding-top: 14px; border-top: 1px solid rgba(255, 255, 255, 0.1); font-size: 13px; color: #94a3b8;"><span>0${sIdx + 1} / 0${slides.length}</span><span style="font-weight: 700; color: ${accent};">KaruAI</span></div>`;
 
-    slide.html_content = `<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;700;900&display=swap" rel="stylesheet"><div style="width: 100%; height: 100%; box-sizing: border-box; overflow: hidden; position: relative; padding: 44px; display: flex; flex-direction: column; justify-content: space-between; direction: ${direction}; text-align: ${textAlign}; font-family: ${fontFamily}; color: #f8fafc; ${bgStyle}"><div style="position: absolute; top: -80px; left: -80px; width: 220px; height: 220px; border-radius: 50%; background: radial-gradient(circle, rgba(56, 189, 248, 0.15) 0%, transparent 70%); pointer-events: none;"></div><div>${badgeHtml}${titleHtml}${contentHtml}</div>${footerHtml}</div>`;
+    slide.html_content = `<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;700;900&display=swap" rel="stylesheet"><div style="width: 100%; height: 100%; box-sizing: border-box; overflow: hidden; position: relative; padding: 36px; display: flex; flex-direction: column; justify-content: space-between; direction: ${direction}; text-align: ${textAlign}; font-family: ${fontFamily}; color: #f8fafc; ${bgStyle}"><div style="position: absolute; top: -80px; left: -80px; width: 220px; height: 220px; border-radius: 50%; background: radial-gradient(circle, rgba(56, 189, 248, 0.15) 0%, transparent 70%); pointer-events: none;"></div><div>${badgeHtml}${titleHtml}${contentHtml}</div>${footerHtml}</div>`;
     return slide;
   });
 }
@@ -420,7 +502,8 @@ aiApp.post('/api/generate-images', authenticateToken, async (c) => {
     details: { total: prompts.length, successCount }
   });
 
-  return c.json({ success: true, images: results });
+  const urls = results.filter(r => r.success).map(r => r.url);
+  return c.json({ success: true, images: results, urls });
 });
 
 // 5. CHAT / CAROUSEL GENERATION (LLM + IMAGE PIPELINE + BACKGROUND PERSISTENCE)
@@ -529,28 +612,31 @@ aiApp.post('/api/chat', authenticateToken, async (c) => {
         let rawResponse = await runLLMChat(c, messages);
         let parsed = extractCarouselJson(rawResponse);
 
-        // Auto-generate images if image plan
+        // If the model proposed an image plan, return it to the user for explicit approval
         if (parsed && parsed.type === 'image_plan' && Array.isArray(parsed.images) && parsed.images.length > 0) {
-          const generatedUrls = [];
-          for (const imgItem of parsed.images.slice(0, 3)) {
-            const desc = typeof imgItem === 'string' ? imgItem : (imgItem.description || imgItem.prompt || 'Modern artistic composition');
-            try {
-              const url = await generateWorkerImage(c, desc);
-              if (url) generatedUrls.push(url);
-            } catch (genErr) {
-              console.error('Auto image gen failed for prompt:', desc, genErr);
-            }
-          }
+          const planReply = '🎨 תכננתי עבורך תוכנית תמונות מקצועית להמחשת השקופיות. אנא אשר את הפקת התמונות או בחר להמשיך בעיצוב טיפוגרפי בלבד:';
+          chatArr.push({ role: 'assistant', content: JSON.stringify(parsed) });
 
-          if (generatedUrls.length > 0) {
-            messages.push({ role: 'assistant', content: JSON.stringify(parsed) });
-            messages.push({
-              role: 'user',
-              content: `Images generated successfully. URLs: ${generatedUrls.join(', ')}. Now please generate the final carousel JSON. Embed the provided image URLs directly into html_content using <img src="..." style="width:100%;height:100%;object-fit:cover;position:absolute;top:0;left:0;opacity:0.35;z-index:1;" /> or CSS background-image. Output ONLY valid JSON starting with { and ending with }.`
-            });
-            rawResponse = await runLLMChat(c, messages);
-            parsed = extractCarouselJson(rawResponse);
-          }
+          await db.prepare('UPDATE posts SET chat_history = ? WHERE id = ?')
+            .bind(JSON.stringify(chatArr), activePostId).run();
+
+          await recordUserLog(c, {
+            userId: user.id,
+            username: user.username,
+            action: 'ai_image_plan_proposed',
+            level: 'INFO',
+            message: `AI proposed image plan with ${parsed.images.length} images for "${initialTitle}"`,
+            statusCode: 200,
+            details: { postId: activePostId, imagesCount: parsed.images.length, prompt: message }
+          });
+
+          return {
+            success: true,
+            reply: planReply,
+            imagePlan: parsed,
+            carousel: null,
+            postId: activePostId
+          };
         }
 
         let replyText = '';
